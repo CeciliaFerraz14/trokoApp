@@ -29,6 +29,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0004_announcements_author_idx.sql` | Índice de autoría de avisos |
 | `supabase/migrations/0005_events.sql` | Calendario: eventos, repeticiones, asistencia, notas personales y suscripción .ics |
 | `supabase/migrations/0006_wall.sql` | Muro de grupos: publicaciones, fotos (bucket privado), comentarios, reacciones y tiempo real |
+| `supabase/migrations/0007_admin.sql` | Resumen de admin, restablecer contraseñas y borrar cuentas |
 | `supabase/seed.sql` | Los grupos actuales (Puertas Abiertas, Semilla, Brote, Raíz, Bloco, Timbau, Mistura, Utrillo). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -94,7 +95,10 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
   - **Admin**: gestiona todo.
   - **Coordinador/a**: por grupo. Publica avisos y eventos para sus grupos y modera su muro.
   - **Miembro**.
-- **Contraseña olvidada**: mientras no haya un servidor de correo configurado, un admin la restablece con `supabase/reset_password.sql`. Después la persona puede cambiarla en *Perfil → Cambiar contraseña*.
+- **Contraseña olvidada**: mientras no haya un servidor de correo configurado, un admin la restablece en *Admin → Personas → persona → Restablecer contraseña*: la app genera una contraseña temporal (p. ej. `surdo-caixa-4821`) y un mensaje para copiar y enviar. Después la persona puede cambiarla en *Perfil → Cambiar contraseña*. (`supabase/reset_password.sql` sigue sirviendo si hiciera falta hacerlo desde Supabase.)
+- **Borrar una cuenta**: cada persona puede borrar la suya en *Perfil → Borrar mi cuenta*, y un admin cualquiera desde su ficha. Se borran el perfil, sus publicaciones, fotos y comentarios del muro, su asistencia y sus notas; los avisos y eventos que creó se mantienen. La última cuenta admin no se puede borrar.
+- **Resumen** (*Admin → Resumen*): personas, contenido y cuánto se ha usado del plan gratuito de Supabase (fotos y base de datos).
+- La **coordinación** ve y comparte el código de invitación de su grupo en *Muro → grupo → Miembros*; regenerarlo es solo de admins.
 - Los emails solo los ven los admins.
 
 ## 7b. Avisos
@@ -165,5 +169,5 @@ src/
 - [x] **2. Avisos**: tablón por grupos, fijados, importantes, no leídos.
 - [x] **3. Calendario y eventos**: categorías, recurrencias, asistencia, notas personales, .ics.
 - [x] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
-- [ ] **5. Admin completo y pulido general**.
+- [x] **5. Admin completo y pulido general**: resumen y uso del plan, contraseñas y borrado de cuentas desde la app, código de invitación para la coordinación, novedades del muro, próximo evento en Avisos, pantalla de error y carga diferida de pantallas.
 - [ ] **Más adelante**: notificaciones push, encuestas, repositorio de material.

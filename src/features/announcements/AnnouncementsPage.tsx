@@ -5,6 +5,7 @@ import { SectionTitle } from '@/components/ui/Card'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { InstallBanner } from '@/features/install/InstallBanner'
+import { NextEvent } from '@/features/calendar/NextEvent'
 import { useMe } from '@/features/auth/useMe'
 import { canPublish, GroupFilter, matchesGroupFilter, useGroupMap } from '@/features/groups/audience'
 import { AnnouncementCard } from './AnnouncementCard'
@@ -62,6 +63,7 @@ export function AnnouncementsPage() {
       />
       <InstallBanner />
       <Page className="space-y-4">
+        <NextEvent />
         {list.isPending ? (
           <SkeletonList count={4} className="h-32" />
         ) : list.isError ? (

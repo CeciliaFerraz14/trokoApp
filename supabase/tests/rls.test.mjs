@@ -1,20 +1,24 @@
 // Tests de la base de datos (RLS, roles, RPC) con PGlite: Postgres en WebAssembly.
 // Simula lo mínimo de Supabase (auth.uid, roles, storage). Uso: npm run test:db
 import { PGlite } from '@electric-sql/pglite'
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto'
 import { readFileSync } from 'node:fs'
 
 const ROOT = new URL('..', import.meta.url).pathname
-const db = new PGlite()
+const db = new PGlite({ extensions: { pgcrypto } })
 
 // --- Simulación mínima del entorno Supabase ---
 await db.exec(`
   create role anon nologin; create role authenticated nologin;
   create schema auth;
-  create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}');
+  create schema extensions;
+  create extension pgcrypto with schema extensions;
+  create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}',
+    encrypted_password text, updated_at timestamptz);
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner_id text default auth.uid()::text);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner_id text default auth.uid()::text, metadata jsonb);
   create publication supabase_realtime;
   alter table storage.objects enable row level security;
   create function storage.foldername(name text) returns text[] language sql immutable as $$
@@ -32,6 +36,7 @@ await db.exec(readFileSync(`${ROOT}/migrations/0003_announcements.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0004_announcements_author_idx.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0005_events.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0006_wall.sql`, 'utf8'))
+await db.exec(readFileSync(`${ROOT}/migrations/0007_admin.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8')) // idempotente
 
@@ -334,6 +339,45 @@ check('coordinación borra la publicación', (await as(B, `delete from posts whe
 check('se borran fotos, comentarios y reacciones', (await one(`select (select count(*) from post_photos) + (select count(*) from post_comments) + (select count(*) from post_reactions) n`)).n == 0)
 const own = (await insPost(E, raiz, 'Mío'))[0]
 check('autora borra lo suyo', (await as(E, `delete from posts where id=$1 returning id`, [own.id])).length === 1)
+
+console.log('Admin: resumen y contraseñas')
+await db.query(`insert into storage.objects (bucket_id, name, metadata) values ('wall', 'x/y/z.jpg', '{"size": 300000}')`)
+const stats = (await as(A, `select admin_stats() s`))[0].s
+check('resumen: personas', stats.people.active >= 4 && stats.people.admins === 1 && stats.people.rejected === 1)
+check('resumen: almacenamiento y base de datos', stats.storage.wall_bytes === 300000 && stats.database_bytes > 0)
+check('resumen solo para admin', /Solo un admin/.test(await asErr(B, `select admin_stats()`)))
+await as(A, `select admin_reset_password($1, 'NuevaClave2026')`, [C])
+check('admin restablece contraseña', (await one(`select encrypted_password = extensions.crypt('NuevaClave2026', encrypted_password) ok from auth.users where id=$1`, [C])).ok)
+check('coordinadora no restablece contraseñas', /Solo un admin/.test(await asErr(B, `select admin_reset_password($1, 'NuevaClave2026')`, [C])))
+check('admin no restablece la suya aquí', /Perfil/.test(await asErr(A, `select admin_reset_password($1, 'NuevaClave2026')`, [A])))
+check('contraseña corta rechazada', /corta/.test(await asErr(A, `select admin_reset_password($1, 'corta')`, [C])))
+check('anon no restablece', !!(await asErr(null, `select admin_reset_password($1, 'NuevaClave2026')`, [C], 'anon')))
+
+console.log('Borrar cuentas')
+const ePost = (await as(E, `insert into posts (group_id, body) values ($1, 'Foto') returning id`, [raiz]))[0].id
+await as(E, `insert into post_photos (post_id, path, width, height) values ($1, $2, 10, 10)`, [ePost, `${raiz}/${ePost}/f.jpg`])
+await as(E, `insert into post_comments (post_id, body) values ($1, 'Mío')`, [ePost])
+const bPost = (await as(B, `insert into posts (group_id, body) values ($1, 'De B') returning id`, [raiz]))[0].id
+await as(E, `insert into post_comments (post_id, body) values ($1, 'Comentario de E en lo de B')`, [bPost])
+const bAnn = (await as(B, `insert into announcements (title, group_ids) values ('Aviso de B', $1) returning id`, [[raiz]]))[0].id
+const files = (await as(E, `select account_files($1) f`, [E]))[0].f
+check('lista sus archivos (foto + miniatura)', files.length === 2 && files.includes(`${raiz}/${ePost}/f_t.jpg`))
+check('otra persona no lista sus archivos', /No puedes/.test(await asErr(C, `select account_files($1)`, [E])))
+check('otra persona no borra su cuenta', /No puedes/.test(await asErr(C, `select delete_account($1)`, [E])))
+await as(E, `select delete_account($1)`, [E])
+check('se borra su propia cuenta', !(await one(`select 1 x from auth.users where id=$1`, [E])) && !(await one(`select 1 x from profiles where id=$1`, [E])))
+check('se borran sus publicaciones y comentarios', (await one(`select (select count(*) from posts where id=$1) + (select count(*) from post_comments where body like 'Comentario de E%') n`, [ePost])).n == 0)
+check('lo de otras personas se queda', (await one(`select count(*)::int n from posts where id=$1`, [bPost])).n === 1)
+check('la única admin no puede borrarse', /única cuenta admin/.test(await asErr(A, `select delete_account($1)`, [A])))
+await as(A, `select delete_account($1)`, [B])
+check('admin borra otra cuenta', !(await one(`select 1 x from profiles where id=$1`, [B])))
+check('sus avisos se quedan (sin autor)', (await one(`select author_id from announcements where id=$1`, [bAnn])).author_id === null)
+const aAnn = (await as(A, `insert into announcements (title) values ('De A') returning id`))[0].id
+check('no se puede quitar la autoría a mano', (await as(A, `update announcements set author_id = null where id=$1 returning author_id`, [aAnn]))[0].author_id === A)
+const cEv = (await as(A, `insert into events (title, starts_at) values ('Ev', now()) returning id`))[0].id
+check('ni la de un evento', (await as(A, `update events set created_by = null where id=$1 returning created_by`, [cEv]))[0].created_by === A)
+check('anon no borra cuentas', !!(await asErr(null, `select delete_account($1)`, [C], 'anon')))
+check('admin borra el avatar ajeno', (await as(A, `delete from storage.objects where bucket_id='avatars' and name like $1 returning id`, [`${E}/%`])).length === 1)
 
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

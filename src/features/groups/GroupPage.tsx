@@ -8,6 +8,8 @@ import { Tabs } from '@/components/ui/Tabs'
 import { Gallery } from '@/features/wall/Gallery'
 import { WallFeed } from '@/features/wall/WallFeed'
 import { useWallRealtime } from '@/features/wall/api'
+import { useMe } from '@/features/auth/useMe'
+import { InviteCodeCard } from './InviteCodeCard'
 import { displayName, useGroup, useGroupMembers } from './api'
 
 type Tab = 'muro' | 'galeria' | 'miembros'
@@ -17,6 +19,7 @@ export function GroupPage() {
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'muro'
   const group = useGroup(groupId)
+  const { data: me } = useMe()
   // Nuevas publicaciones, comentarios y reacciones aparecen solos
   useWallRealtime(groupId)
 
@@ -39,7 +42,16 @@ export function GroupPage() {
             { value: 'miembros', label: 'Miembros' },
           ]}
         />
-        {tab === 'muro' ? <WallFeed groupId={g.id} /> : tab === 'galeria' ? <Gallery groupId={g.id} /> : <MembersList groupId={g.id} />}
+        {tab === 'muro' ? (
+          <WallFeed groupId={g.id} />
+        ) : tab === 'galeria' ? (
+          <Gallery groupId={g.id} />
+        ) : (
+          <>
+            {me?.canManageGroup(g.id) && <InviteCodeCard groupId={g.id} groupName={g.name} canRegenerate={me.isAdmin} />}
+            <MembersList groupId={g.id} />
+          </>
+        )}
       </Page>
     </>
   )

@@ -142,6 +142,14 @@ export type PostReaction = {
   created_at: string
 }
 
+/** Resumen del panel de admin (función admin_stats) */
+export type AdminStats = {
+  people: { active: number; pending: number; rejected: number; admins: number }
+  content: { announcements: number; events: number; posts: number; photos: number; comments: number }
+  storage: { wall_bytes: number; avatars_bytes: number }
+  database_bytes: number
+}
+
 /** Estado completo de una fecha de la serie para update_event_series */
 export type EventSeriesRow = Pick<
   CalendarEvent,
@@ -271,6 +279,10 @@ export type Database = {
       update_event_series: { Args: { p_rows: EventSeriesRow[] }; Returns: number }
       my_calendar_token: { Args: Record<string, never>; Returns: string }
       regenerate_calendar_token: { Args: Record<string, never>; Returns: string }
+      admin_stats: { Args: Record<string, never>; Returns: AdminStats }
+      admin_reset_password: { Args: { p_user: string; p_password: string }; Returns: undefined }
+      account_files: { Args: { p_user: string }; Returns: string[] }
+      delete_account: { Args: { p_user: string }; Returns: undefined }
     }
     Enums: {
       app_role: AppRole

@@ -149,3 +149,57 @@ export function useRegenerateCode() {
     onSuccess: (_d, groupId) => qc.invalidateQueries({ queryKey: ['invite-code', groupId] }),
   })
 }
+
+// ---------------------------------------------------------------------------
+// Resumen, contraseñas y borrado de cuentas
+// ---------------------------------------------------------------------------
+
+export function useAdminStats() {
+  return useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('admin_stats')
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const { error } = await supabase.rpc('admin_reset_password', { p_user: userId, p_password: password })
+      if (error) throw error
+    },
+  })
+}
+
+/** Contraseña temporal fácil de dictar: "surdo-caixa-4821" */
+export function tempPassword() {
+  const words = ['surdo', 'caixa', 'repique', 'tamborim', 'agogo', 'timbal', 'chocalho', 'ganza', 'samba', 'bloco']
+  const n = new Uint32Array(3)
+  crypto.getRandomValues(n)
+  return `${words[n[0] % words.length]}-${words[n[1] % words.length]}-${1000 + (n[2] % 9000)}`
+}
+
+/**
+ * Borra una cuenta (la propia o, si es admin, cualquiera). Primero borra sus
+ * archivos por la API de Storage (desde SQL no se puede) y luego la cuenta.
+ */
+export async function deleteAccount(userId: string) {
+  const { data: files, error } = await supabase.rpc('account_files', { p_user: userId })
+  if (error) throw error
+  if (files?.length) {
+    const { error: e2 } = await supabase.storage.from('wall').remove(files)
+    if (e2) throw e2
+  }
+  // Puede no tener avatar: si no existe, Storage no da error
+  await supabase.storage.from('avatars').remove([`${userId}/avatar.jpg`])
+  const { error: e3 } = await supabase.rpc('delete_account', { p_user: userId })
+  if (e3) throw e3
+}
+
+export function useDeleteAccount() {
+  const invalidate = useInvalidateAdmin()
+  return useMutation({ mutationFn: deleteAccount, onSuccess: invalidate })
+}

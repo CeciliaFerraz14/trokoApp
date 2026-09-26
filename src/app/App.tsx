@@ -5,15 +5,10 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { RegisterPage } from '@/features/auth/RegisterPage'
 import { AnnouncementsPage } from '@/features/announcements/AnnouncementsPage'
 import { AnnouncementDetailPage } from '@/features/announcements/AnnouncementDetailPage'
-import { AnnouncementFormPage } from '@/features/announcements/AnnouncementFormPage'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { EventDetailPage } from '@/features/calendar/EventDetailPage'
-import { EventFormPage } from '@/features/calendar/EventFormPage'
-import { SubscribePage } from '@/features/calendar/SubscribePage'
 import { MyGroupsPage } from '@/features/groups/MyGroupsPage'
 import { GroupPage } from '@/features/groups/GroupPage'
-import { ComposerPage } from '@/features/wall/ComposerPage'
-import { PostPage } from '@/features/wall/PostPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { EditProfilePage } from '@/features/profile/EditProfilePage'
 import { ChangePasswordPage } from '@/features/profile/ChangePasswordPage'
@@ -22,6 +17,13 @@ import { EmptyState } from '@/components/ui/States'
 import { AppShell } from './AppShell'
 import { PublicOnly, RequireActive, RequireAdmin } from './guards'
 import { Splash } from './Splash'
+
+// Pantallas secundarias (formularios, detalle de publicación…): se cargan al abrirlas
+const AnnouncementFormPage = lazy(() => import('@/features/announcements/AnnouncementFormPage').then((m) => ({ default: m.AnnouncementFormPage })))
+const EventFormPage = lazy(() => import('@/features/calendar/EventFormPage').then((m) => ({ default: m.EventFormPage })))
+const SubscribePage = lazy(() => import('@/features/calendar/SubscribePage').then((m) => ({ default: m.SubscribePage })))
+const ComposerPage = lazy(() => import('@/features/wall/ComposerPage').then((m) => ({ default: m.ComposerPage })))
+const PostPage = lazy(() => import('@/features/wall/PostPage').then((m) => ({ default: m.PostPage })))
 
 // El panel de admin solo lo usan unas pocas personas: se carga aparte
 const AdminPage = lazy(() => import('@/features/admin/AdminPage').then((m) => ({ default: m.AdminPage })))

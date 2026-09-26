@@ -4,11 +4,13 @@ import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/States'
 import { Badge } from '@/components/ui/Badge'
 import { useMe } from '@/features/auth/useMe'
+import { useWallNews } from '@/features/wall/news'
 
 /** Pestaña "Muro": los grupos de la persona */
 export function MyGroupsPage() {
   const { data: me } = useMe()
   const memberships = me?.memberships ?? []
+  const news = useWallNews()
 
   return (
     <>
@@ -31,6 +33,7 @@ export function MyGroupsPage() {
                     <p className="font-display text-2xl font-bold">{group.name}</p>
                     {group.schedule && <p className="truncate text-sm text-muted">{group.schedule}</p>}
                   </div>
+                  {news.has(group.id) && <Badge tone="warning">Novedades</Badge>}
                   {role === 'coordinator' && <Badge tone="brand">Coordinas</Badge>}
                   <ChevronRight className="size-5 text-muted" />
                 </Link>

@@ -170,6 +170,7 @@ export function useWallRealtime(groupId: string | undefined) {
         void qc.invalidateQueries({ queryKey: ['gallery', groupId] })
         void qc.invalidateQueries({ queryKey: ['post'] })
         void qc.invalidateQueries({ queryKey: ['comments'] })
+        void qc.invalidateQueries({ queryKey: ['wall-news'] })
       }, 400)
     }
     const channel = supabase.channel(`wall:${groupId}`)

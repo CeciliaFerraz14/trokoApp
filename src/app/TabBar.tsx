@@ -14,15 +14,18 @@ export function TabBar({
   isAdmin,
   pendingCount = 0,
   unreadCount = 0,
+  wallNews = 0,
 }: {
   isAdmin: boolean
   pendingCount?: number
   unreadCount?: number
+  /** Grupos con publicaciones nuevas */
+  wallNews?: number
 }) {
   const tabs: Tab[] = [
     { to: '/avisos', label: 'Avisos', icon: Megaphone, badge: unreadCount },
     { to: '/calendario', label: 'Calendario', icon: CalendarDays },
-    { to: '/muro', label: 'Muro', icon: UsersRound },
+    { to: '/muro', label: 'Muro', icon: UsersRound, badge: wallNews },
     { to: '/perfil', label: 'Perfil', icon: UserRound },
   ]
   if (isAdmin) tabs.push({ to: '/admin', label: 'Admin', icon: ShieldCheck, badge: pendingCount })

@@ -1,17 +1,17 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { Archive, ArchiveRestore, Copy, RefreshCw, Share2, UsersRound } from 'lucide-react'
+import { Archive, ArchiveRestore, UsersRound } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { GROUP_COLORS } from '@/lib/constants'
 import { Button } from '@/components/ui/Button'
-import { Card, SectionTitle } from '@/components/ui/Card'
 import { FormError, TextArea, TextField } from '@/components/ui/Field'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useGroup } from '@/features/groups/api'
-import { useInviteCode, useRegenerateCode, useSaveGroup, type GroupInput } from './api'
+import { InviteCodeCard } from '@/features/groups/InviteCodeCard'
+import { useSaveGroup, type GroupInput } from './api'
 
 const empty: GroupInput = { name: '', description: '', color: GROUP_COLORS[0], sort_order: 100, schedule: '' }
 
@@ -120,7 +120,7 @@ export function AdminGroupPage() {
 
         {!isNew && id && (
           <>
-            <InviteCodeCard groupId={id} groupName={form.name} />
+            <InviteCodeCard groupId={id} groupName={form.name} canRegenerate />
             <Link to={`/muro/${id}?tab=miembros`} className="block">
               <Button variant="secondary" block icon={<UsersRound className="size-4" />}>
                 Ver miembros
@@ -138,58 +138,5 @@ export function AdminGroupPage() {
         )}
       </Page>
     </>
-  )
-}
-
-function InviteCodeCard({ groupId, groupName }: { groupId: string; groupName: string }) {
-  const code = useInviteCode(groupId)
-  const regenerate = useRegenerateCode()
-  const toast = useToast()
-  const value = code.data?.code
-
-  const message = `¡Únete a ${groupName} en la app de Troko Bloco! Regístrate en ${location.origin}/registro con el código ${value}`
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value ?? '')
-      toast('Código copiado')
-    } catch {
-      toast('No se pudo copiar', 'error')
-    }
-  }
-  const share = () => navigator.share?.({ title: 'Troko Bloco', text: message }).catch(() => {})
-
-  return (
-    <section>
-      <SectionTitle>Código de invitación</SectionTitle>
-      <Card className="space-y-3 text-center">
-        <p className="font-mono text-4xl font-bold tracking-[0.3em] text-accent">{value ?? '······'}</p>
-        <p className="text-sm text-muted">
-          Quien se registre con este código entra directamente en <strong>{groupName}</strong> sin esperar aprobación.
-        </p>
-        <div className="flex gap-2">
-          <Button variant="secondary" className="flex-1" onClick={copy} icon={<Copy className="size-4" />} disabled={!value}>
-            Copiar
-          </Button>
-          {'share' in navigator && (
-            <Button variant="secondary" className="flex-1" onClick={share} icon={<Share2 className="size-4" />} disabled={!value}>
-              Compartir
-            </Button>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          block
-          loading={regenerate.isPending}
-          icon={<RefreshCw className="size-4" />}
-          onClick={() =>
-            confirm('¿Generar un código nuevo? El anterior dejará de funcionar.') &&
-            regenerate.mutate(groupId, { onSuccess: () => toast('Código regenerado'), onError: (e) => toast(errorMessage(e), 'error') })
-          }
-        >
-          Regenerar código
-        </Button>
-      </Card>
-    </section>
   )
 }

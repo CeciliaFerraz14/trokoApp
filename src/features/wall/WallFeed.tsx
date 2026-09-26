@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router'
 import { ImagePlus, MessageSquareHeart } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { useMe } from '@/features/auth/useMe'
 import { useWall } from './api'
+import { markWallSeen } from './news'
 import { PostCard } from './PostCard'
 
 export function WallFeed({ groupId }: { groupId: string }) {
@@ -12,6 +14,12 @@ export function WallFeed({ groupId }: { groupId: string }) {
   const wall = useWall(groupId)
   const posts = wall.data?.pages.flat() ?? []
   const canPost = !!me && (me.isAdmin || me.memberships.some((m) => m.group.id === groupId))
+
+  // Lo que se ve aquí deja de contar como novedad (también lo que llega en tiempo real)
+  const newest = posts[0]?.created_at
+  useEffect(() => {
+    if (newest) markWallSeen(groupId, newest)
+  }, [newest, groupId])
 
   return (
     <div className="space-y-3">

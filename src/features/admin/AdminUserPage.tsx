@@ -1,7 +1,8 @@
-import { useParams } from 'react-router'
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Ban, Check, RotateCcw } from 'lucide-react'
+import { Ban, Check, Copy, KeyRound, RotateCcw, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { Avatar } from '@/components/ui/Avatar'
@@ -14,7 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
 import { displayName, useGroups } from '@/features/groups/api'
 import type { GroupRole } from '@/types/database'
-import { useAllUsers, useSetMembership, useUpdateUserAccount, useUserEmails } from './api'
+import { tempPassword, useAllUsers, useDeleteAccount, useResetPassword, useSetMembership, useUpdateUserAccount, useUserEmails } from './api'
 
 const statusLabel = { active: 'Activa', pending: 'Pendiente', rejected: 'Rechazada' } as const
 const statusTone = { active: 'success', pending: 'warning', rejected: 'danger' } as const
@@ -131,6 +132,8 @@ export function AdminUserPage() {
           </ul>
         </section>
 
+        {!isSelf && <ResetPassword userId={user.id} name={displayName(user)} />}
+
         {!isSelf && (
           <section>
             <SectionTitle>Acceso</SectionTitle>
@@ -156,7 +159,83 @@ export function AdminUserPage() {
             )}
           </section>
         )}
+
+        {!isSelf && <DeleteAccount userId={user.id} name={displayName(user)} />}
       </Page>
     </>
+  )
+}
+
+function ResetPassword({ userId, name }: { userId: string; name: string }) {
+  const reset = useResetPassword()
+  const toast = useToast()
+  const [password, setPassword] = useState<string | null>(null)
+
+  const onReset = () => {
+    if (!confirm(`¿Poner una contraseña temporal a ${name}? La actual dejará de funcionar.`)) return
+    const next = tempPassword()
+    reset.mutate({ userId, password: next }, { onSuccess: () => setPassword(next), onError: (e) => toast(errorMessage(e), 'error') })
+  }
+  const message = password
+    ? `Hola ${name}: tu contraseña temporal de la app de Troko Bloco es ${password}. Entra en ${location.origin} y cámbiala en Perfil → Cambiar contraseña.`
+    : ''
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(message)
+      toast('Mensaje copiado')
+    } catch {
+      toast('No se pudo copiar', 'error')
+    }
+  }
+
+  return (
+    <section>
+      <SectionTitle>Contraseña</SectionTitle>
+      {password ? (
+        <Card className="space-y-3 text-center">
+          <p className="text-sm text-muted">Contraseña temporal de {name}:</p>
+          <p className="font-mono text-2xl font-bold text-accent select-all">{password}</p>
+          <p className="text-sm text-muted">Pásasela por un canal privado. Podrá cambiarla en Perfil → Cambiar contraseña.</p>
+          <Button variant="secondary" block icon={<Copy className="size-4" />} onClick={copy}>
+            Copiar mensaje
+          </Button>
+        </Card>
+      ) : (
+        <Button variant="secondary" block icon={<KeyRound className="size-4" />} loading={reset.isPending} onClick={onReset}>
+          Restablecer contraseña
+        </Button>
+      )}
+    </section>
+  )
+}
+
+function DeleteAccount({ userId, name }: { userId: string; name: string }) {
+  const remove = useDeleteAccount()
+  const navigate = useNavigate()
+  const toast = useToast()
+
+  const onDelete = () => {
+    const answer = prompt(
+      `Se borrará la cuenta de ${name} con su perfil, sus publicaciones, fotos y comentarios del muro. No se puede deshacer.\n\nEscribe BORRAR para confirmar.`,
+    )
+    if (answer?.trim().toUpperCase() !== 'BORRAR') return
+    remove.mutate(userId, {
+      onSuccess: () => {
+        toast('Cuenta borrada')
+        navigate('/admin?tab=personas', { replace: true })
+      },
+      onError: (e) => toast(errorMessage(e), 'error'),
+    })
+  }
+
+  return (
+    <section className="border-t border-line pt-6">
+      <Button variant="danger" block icon={<Trash2 className="size-4" />} loading={remove.isPending} onClick={onDelete}>
+        Borrar cuenta
+      </Button>
+      <p className="mt-2 px-1 text-sm text-muted">
+        Para quitar el acceso sin borrar nada, usa «Desactivar cuenta». Los avisos y eventos que creó se mantienen.
+      </p>
+    </section>
   )
 }

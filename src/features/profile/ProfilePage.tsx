@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { CalendarSync, ChevronRight, KeyRound, LogOut, Moon, Pencil, Smartphone, Sun } from 'lucide-react'
+import { CalendarSync, ChevronRight, KeyRound, Loader2, Trash2, LogOut, Moon, Pencil, Smartphone, Sun } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge, GroupDot } from '@/components/ui/Badge'
@@ -9,6 +10,9 @@ import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/States'
 import { signOut } from '@/features/auth/AuthProvider'
 import { useMe } from '@/features/auth/useMe'
+import { deleteAccount } from '@/features/admin/api'
+import { useToast } from '@/components/ui/Toast'
+import { errorMessage } from '@/lib/errors'
 
 export function ProfilePage() {
   const { data: me } = useMe()
@@ -93,7 +97,43 @@ export function ProfilePage() {
         <Button variant="danger" block icon={<LogOut className="size-4" />} onClick={() => signOut()}>
           Cerrar sesión
         </Button>
+
+        <DeleteMyAccount userId={profile.id} />
       </Page>
     </>
+  )
+}
+
+function DeleteMyAccount({ userId }: { userId: string }) {
+  const toast = useToast()
+  const [deleting, setDeleting] = useState(false)
+
+  const onDelete = async () => {
+    const answer = prompt(
+      'Se borrarán tu cuenta, tu perfil y tus publicaciones, fotos y comentarios del muro. No se puede deshacer.\n\nEscribe BORRAR para confirmar.',
+    )
+    if (answer?.trim().toUpperCase() !== 'BORRAR') return
+    setDeleting(true)
+    try {
+      await deleteAccount(userId)
+      await signOut()
+    } catch (e) {
+      toast(errorMessage(e), 'error')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="border-t border-line pt-6 text-center">
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={deleting}
+        className="inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-danger hover:bg-danger/10 disabled:opacity-50"
+      >
+        {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+        Borrar mi cuenta
+      </button>
+    </div>
   )
 }
