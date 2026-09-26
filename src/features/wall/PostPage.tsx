@@ -94,7 +94,7 @@ function EditPost({ post, onDone }: { post: WallPost; onDone: () => void }) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
-    if (videoUrl.trim() && !video) return setError('El enlace del vídeo tiene que empezar por https://')
+    if (videoUrl.trim() && !video) return setError('El enlace tiene que empezar por https://')
     if (!body.trim() && !post.photos.length && !video) return setError('La publicación no puede quedarse vacía.')
     update.mutate(
       { post, body, videoUrl: video?.url ?? null },
@@ -111,7 +111,7 @@ function EditPost({ post, onDone }: { post: WallPost; onDone: () => void }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-brand-blue/50 bg-surface p-4">
       <TextArea label="Texto" rows={5} maxLength={5000} value={body} onChange={(e) => setBody(e.target.value)} />
-      <TextField label="Enlace de vídeo" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://youtu.be/…" />
+      <TextField label="Enlace de vídeo o música" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="YouTube, Instagram, Spotify…" />
       {post.photos.length > 0 && <p className="text-sm text-muted">Las fotos no se pueden cambiar: si hace falta, borra la publicación y vuelve a publicarla.</p>}
       <FormError>{error}</FormError>
       <div className="flex gap-2">

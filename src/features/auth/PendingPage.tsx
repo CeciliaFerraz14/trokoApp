@@ -1,18 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect } from 'react'
 import { Clock, LogOut, XCircle } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { errorMessage } from '@/lib/errors'
 import { queryClient } from '@/lib/queryClient'
 import { Button } from '@/components/ui/Button'
-import { FormError, TextField } from '@/components/ui/Field'
 import { AuthLayout } from './AuthLayout'
 import { signOut } from './AuthProvider'
 import type { Profile } from '@/types/database'
 
 export function PendingPage({ profile }: { profile: Profile }) {
-  const [code, setCode] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const rejected = profile.status === 'rejected'
 
   // Comprueba cada 20 s si ya la han aprobado
@@ -21,16 +15,6 @@ export function PendingPage({ profile }: { profile: Profile }) {
     const id = setInterval(() => queryClient.invalidateQueries({ queryKey: ['me'] }), 20_000)
     return () => clearInterval(id)
   }, [rejected])
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-    const { error } = await supabase.rpc('join_with_code', { p_code: code })
-    setLoading(false)
-    if (error) setError(errorMessage(error))
-    else await queryClient.invalidateQueries({ queryKey: ['me'] })
-  }
 
   return (
     <AuthLayout>
@@ -44,27 +28,9 @@ export function PendingPage({ profile }: { profile: Profile }) {
         <p className="mt-3 text-white/75">
           {rejected
             ? 'Tu cuenta no ha sido aprobada. Si crees que es un error, habla con la organización de Troko Bloco.'
-            : 'Tu cuenta está pendiente de aprobación. En cuanto un admin la acepte y te asigne tus grupos podrás entrar. Esta pantalla se actualiza sola.'}
+            : 'Tu cuenta está pendiente de aprobación. En cuanto un admin la acepte podrás entrar y pedir acceso a tus grupos. Esta pantalla se actualiza sola.'}
         </p>
       </div>
-
-      {!rejected && (
-        <form onSubmit={onSubmit} className="mt-8 space-y-3 rounded-2xl border border-white/15 p-4">
-          <p className="text-sm font-semibold text-white/80">¿Tienes un código de invitación de tu grupo?</p>
-          <TextField
-            label="Código"
-            autoCapitalize="characters"
-            autoComplete="off"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="[&_input]:font-mono [&_input]:tracking-widest [&_input]:uppercase"
-          />
-          <FormError>{error}</FormError>
-          <Button type="submit" block loading={loading} disabled={code.trim().length < 4}>
-            Usar código
-          </Button>
-        </form>
-      )}
 
       <Button variant="ghost" className="mx-auto mt-6 flex" icon={<LogOut className="size-4" />} onClick={() => signOut()}>
         Cerrar sesión

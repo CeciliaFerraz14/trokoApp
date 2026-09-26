@@ -58,8 +58,8 @@ export function ComposerPage() {
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (videoInvalid) return setError('El enlace del vídeo no es válido. Tiene que empezar por https://')
-    if (!body.trim() && !files.length && !video) return setError('Escribe algo o añade una foto o un vídeo.')
+    if (videoInvalid) return setError('El enlace no es válido. Tiene que empezar por https://')
+    if (!body.trim() && !files.length && !video) return setError('Escribe algo o añade una foto o un enlace.')
     create.mutate(
       { groupId: groupId!, body, videoUrl: video?.url ?? null, files, onProgress: (done, total) => setProgress([done, total]) },
       {
@@ -129,14 +129,14 @@ export function ComposerPage() {
 
           <div className="space-y-2">
             <TextField
-              label="Enlace de vídeo (opcional)"
+              label="Enlace de vídeo o música (opcional)"
               type="url"
               inputMode="url"
-              placeholder="https://youtu.be/…"
+              placeholder="https://youtu.be/… o https://open.spotify.com/…"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
               error={videoInvalid ? 'Pega un enlace que empiece por https://' : null}
-              hint="De YouTube, Instagram… Los vídeos no se suben a la app."
+              hint="De YouTube, Instagram, TikTok o Spotify. Los vídeos no se suben a la app, se enlazan."
             />
             {video && <VideoPreview video={video} />}
           </div>

@@ -10,7 +10,7 @@ import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useGroup, useGroups } from '@/features/groups/api'
-import { InviteCodeCard } from '@/features/groups/InviteCodeCard'
+import { InviteCard } from '@/features/groups/InviteCard'
 import { useSaveGroup, type GroupInput } from './api'
 
 const empty: GroupInput = { name: '', description: '', color: GROUP_COLORS[0], sort_order: 100, schedule: '' }
@@ -115,7 +115,7 @@ export function AdminGroupPage() {
 
         {!isNew && id && (
           <>
-            <InviteCodeCard groupId={id} groupName={form.name} canRegenerate />
+            <InviteCard groupName={form.name} />
             <Link to={`/muro/${id}?tab=miembros`} className="block">
               <Button variant="secondary" block icon={<UsersRound className="size-4" />}>
                 Ver miembros

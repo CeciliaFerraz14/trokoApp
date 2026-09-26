@@ -2,13 +2,12 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { supabase } from '@/lib/supabase'
 import { errorMessage } from '@/lib/errors'
-import { queryClient } from '@/lib/queryClient'
 import { Button } from '@/components/ui/Button'
 import { FormError, TextField } from '@/components/ui/Field'
 import { AuthLayout } from './AuthLayout'
 
 export function RegisterPage() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', code: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
@@ -36,14 +35,7 @@ export function RegisterPage() {
       setLoading(false)
       return setNeedsConfirmation(true)
     }
-    if (form.code.trim()) {
-      const { error: codeError } = await supabase.rpc('join_with_code', { p_code: form.code })
-      if (codeError) {
-        // La cuenta ya existe: seguirá pendiente y podrá reintentar el código
-        setError(`Cuenta creada, pero el código no ha funcionado: ${errorMessage(codeError)}`)
-      }
-      await queryClient.invalidateQueries({ queryKey: ['me'] })
-    }
+    // La cuenta queda pendiente: un admin la aprueba desde Admin → Pendientes
     setLoading(false)
   }
 
@@ -83,15 +75,7 @@ export function RegisterPage() {
           value={form.password}
           onChange={set('password')}
         />
-        <TextField
-          label="Código de invitación (opcional)"
-          autoCapitalize="characters"
-          autoComplete="off"
-          hint="Si tu grupo te ha dado un código, tu cuenta se activa al momento. Si no, un admin la aprobará."
-          value={form.code}
-          onChange={set('code')}
-          className="[&_input]:font-mono [&_input]:tracking-widest [&_input]:uppercase"
-        />
+        <p className="text-sm text-white/70">Un admin de Troko Bloco revisará tu cuenta y te dará acceso. Después podrás pedir entrar en tus grupos.</p>
         <FormError>{error}</FormError>
         <Button type="submit" block loading={loading} disabled={!form.email || !form.password || !form.name} className="min-h-14 text-lg">
           Crear cuenta

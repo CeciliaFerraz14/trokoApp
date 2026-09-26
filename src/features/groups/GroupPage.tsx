@@ -11,7 +11,7 @@ import { WallFeed } from '@/features/wall/WallFeed'
 import { useGallery, useWallRealtime } from '@/features/wall/api'
 import { useEvents } from '@/features/calendar/api'
 import { useMe } from '@/features/auth/useMe'
-import { InviteCodeCard } from './InviteCodeCard'
+import { InviteCard } from './InviteCard'
 import { displayName, useGroup, useGroupMembers } from './api'
 
 type Tab = 'muro' | 'galeria' | 'miembros'
@@ -79,7 +79,7 @@ export function GroupPage() {
           <Gallery groupId={g.id} />
         ) : (
           <>
-            {me?.canManageGroup(g.id) && <InviteCodeCard groupId={g.id} groupName={g.name} canRegenerate={me.isAdmin} />}
+            {me?.canManageGroup(g.id) && <InviteCard groupName={g.name} />}
             <MembersList groupId={g.id} />
           </>
         )}

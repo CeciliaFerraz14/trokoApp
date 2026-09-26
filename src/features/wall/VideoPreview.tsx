@@ -1,10 +1,24 @@
 import { ExternalLink, Play } from 'lucide-react'
 import type { VideoLink } from './video'
 
-const LABELS = { instagram: 'Ver en Instagram', tiktok: 'Ver en TikTok', link: 'Abrir vídeo' }
+const LABELS = { instagram: 'Ver en Instagram', tiktok: 'Ver en TikTok', link: 'Abrir enlace' }
 
-/** Vista previa ligera: miniatura de YouTube (sin reproductor incrustado) o tarjeta con enlace */
+/**
+ * Vista previa del enlace: miniatura de YouTube (sin reproductor incrustado),
+ * reproductor compacto de Spotify, o tarjeta con enlace.
+ */
 export function VideoPreview({ video }: { video: VideoLink }) {
+  if (video.kind === 'spotify') {
+    return (
+      <iframe
+        title="Reproductor de Spotify"
+        src={video.embed}
+        loading="lazy"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        className="block h-[152px] w-full rounded-xl border-0 bg-surface-2"
+      />
+    )
+  }
   if (video.kind === 'youtube') {
     return (
       <a href={video.url} target="_blank" rel="noopener noreferrer" className="group relative block overflow-hidden rounded-xl bg-black" aria-label="Ver vídeo en YouTube">

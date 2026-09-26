@@ -32,6 +32,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0007_admin.sql` | Resumen de admin, restablecer contraseñas y borrar cuentas |
 | `supabase/migrations/0008_instrument_names.sql` | Renombra los instrumentos guardados a Fondo 1, Fondo 2, Surdo 3, Repique, Caja y Timbau |
 | `supabase/migrations/0009_group_requests.sql` | Solicitudes para entrar en grupos (las acepta o rechaza un admin) |
+| `supabase/migrations/0010_disable_invite_codes.sql` | Desactiva los códigos de invitación: todo pasa por la aprobación de un admin |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -92,7 +93,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 ## 7. Cómo funcionan las cuentas
 
 - **Registro**: nombre + email + contraseña. La cuenta queda **pendiente** hasta que un admin la aprueba y le asigna grupos. Mientras tanto la persona ve una pantalla de espera que se actualiza sola.
-- **Código de invitación**: cada grupo tiene uno (Admin → Grupos → grupo). Quien se registre con el código entra directamente en ese grupo sin esperar. El admin puede regenerarlo cuando quiera. Una cuenta rechazada no puede usar códigos.
+- **Sin códigos de invitación**: toda cuenta nueva la aprueba un admin, y para entrar en un grupo se pide acceso (ver abajo). Para invitar a alguien se comparte el enlace de registro (*Admin → Grupos → grupo* o, para la coordinación, *Muro → grupo → Miembros*). Los códigos de la fase 1 están desactivados en la base de datos (migración 0010).
 - **Roles**:
   - **Admin**: gestiona todo.
   - **Coordinador/a**: por grupo. Publica avisos y eventos para sus grupos y modera su muro.
@@ -101,8 +102,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Borrar una cuenta**: cada persona puede borrar la suya en *Perfil → Borrar mi cuenta*, y un admin cualquiera desde su ficha. Se borran el perfil, sus publicaciones, fotos y comentarios del muro, su asistencia y sus notas; los avisos y eventos que creó se mantienen. La última cuenta admin no se puede borrar.
 - **Resumen** (*Admin → Resumen*): personas, contenido y cuánto se ha usado del plan gratuito de Supabase (fotos y base de datos).
 - **Orden de los grupos**: en *Admin → Grupos*, con las flechas ↑↓. Es el orden en que salen en toda la app; un grupo nuevo va al final.
-- **Entrar en otros grupos**: en *Muro* cada persona ve todos los grupos. En los que no está puede pulsar **Solicitar acceso** (también desde dentro del grupo); un admin la acepta o rechaza en *Admin → Pendientes*. Mientras tanto no ve el muro de ese grupo. Si se rechaza, lo ve y puede volver a pedirlo. Entrar con código de invitación sigue sin necesitar solicitud.
-- La **coordinación** ve y comparte el código de invitación de su grupo en *Muro → grupo → Miembros*; regenerarlo es solo de admins.
+- **Entrar en otros grupos**: en *Muro* cada persona ve todos los grupos. En los que no está puede pulsar **Solicitar acceso** (también desde dentro del grupo); un admin la acepta o rechaza en *Admin → Pendientes*. Mientras tanto no ve el muro de ese grupo. Si se rechaza, lo ve y puede volver a pedirlo.
 - Los emails solo los ven los admins.
 
 ## 7b. Avisos
@@ -125,7 +125,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 ## 7d. Muro de grupos
 
 - Cada grupo tiene su **muro** (pestaña *Muro* → grupo): lo ven y escriben solo sus miembros (y los admins).
-- **Publicaciones**: texto, hasta 6 fotos y un enlace de vídeo (YouTube, Instagram…; los vídeos no se suben). Quien publica puede editar el texto.
+- **Publicaciones**: texto, hasta 6 fotos y un enlace de vídeo o música (YouTube, Instagram, TikTok o Spotify; los vídeos no se suben). Los enlaces de Spotify se ven como reproductor dentro de la publicación. Quien publica puede editar el texto.
 - **Fotos**: se reducen en el móvil (1600 px + miniatura de 640 px) y se guardan en el bucket **privado** `wall`: solo las ven las personas del grupo, mediante enlaces temporales. Pestaña **Galería** con todas las fotos del grupo.
 - **Comentarios y reacciones** (👏 ❤️ 😂 🥁 🔥, una por persona).
 - **Moderación**: la coordinación del grupo y los admins pueden borrar publicaciones y comentarios. Al borrar una publicación se borran también sus fotos.

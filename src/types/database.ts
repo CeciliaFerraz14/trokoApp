@@ -290,9 +290,7 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
-      join_with_code: { Args: { p_code: string }; Returns: string }
       approve_user: { Args: { p_user: string; p_groups: string[] }; Returns: undefined }
-      regenerate_invite_code: { Args: { p_group: string }; Returns: string }
       admin_user_emails: { Args: Record<string, never>; Returns: { id: string; email: string }[] }
       is_admin: { Args: Record<string, never>; Returns: boolean }
       update_event_series: { Args: { p_rows: EventSeriesRow[] }; Returns: number }

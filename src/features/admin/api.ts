@@ -54,18 +54,6 @@ export function useUserEmails() {
   })
 }
 
-export function useInviteCode(groupId: string | undefined) {
-  return useQuery({
-    queryKey: ['invite-code', groupId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('group_invite_codes').select('*').eq('group_id', groupId!).maybeSingle()
-      if (error) throw error
-      return data
-    },
-    enabled: !!groupId,
-  })
-}
-
 // ---------------------------------------------------------------------------
 // Mutaciones
 // ---------------------------------------------------------------------------
@@ -140,18 +128,6 @@ export function useSaveGroup() {
         qc.invalidateQueries({ queryKey: ['group'] }),
         qc.invalidateQueries({ queryKey: ['me'] }),
       ]),
-  })
-}
-
-export function useRegenerateCode() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (groupId: string) => {
-      const { data, error } = await supabase.rpc('regenerate_invite_code', { p_group: groupId })
-      if (error) throw error
-      return data
-    },
-    onSuccess: (_d, groupId) => qc.invalidateQueries({ queryKey: ['invite-code', groupId] }),
   })
 }
 

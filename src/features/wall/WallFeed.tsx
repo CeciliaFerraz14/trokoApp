@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
-import { ImagePlus, Lock, MessageSquareHeart } from 'lucide-react'
+import { Clapperboard, ImagePlus, Lock, MessageSquareHeart, Music } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
@@ -30,8 +30,15 @@ export function WallFeed({ groupId, groupName }: { groupId: string; groupName: s
           className="flex min-h-16 items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 hover:border-brand-blue"
         >
           <Avatar name={me?.profile.full_name} url={me?.profile.avatar_url} size="sm" />
-          <span className="flex-1 text-muted">Comparte algo con el grupo…</span>
-          <ImagePlus className="size-5 text-accent" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block text-muted">Comparte algo con el grupo…</span>
+            <span className="block text-xs text-muted/80">Texto, fotos, vídeos o Spotify</span>
+          </span>
+          <span className="flex gap-2 text-accent" aria-hidden>
+            <ImagePlus className="size-5" />
+            <Clapperboard className="size-5" />
+            <Music className="size-5" />
+          </span>
         </Link>
       )}
 
