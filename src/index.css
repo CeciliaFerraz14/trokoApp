@@ -121,8 +121,8 @@
     inset: 0;
     -webkit-mask-repeat: repeat;
     mask-repeat: repeat;
-    -webkit-mask-size: 260px;
-    mask-size: 260px;
+    -webkit-mask-size: 270px;
+    mask-size: 270px;
   }
   .pattern-lines {
     background-color: var(--pattern-lines);
