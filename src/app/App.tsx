@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/ui/States'
 import { AppShell } from './AppShell'
 import { PublicOnly, RequireActive, RequireAdmin } from './guards'
 import { Splash } from './Splash'
+import { UpdatePrompt } from './UpdatePrompt'
 
 // Pantallas secundarias (formularios, detalle de publicación…): se cargan al abrirlas
 const AnnouncementFormPage = lazy(() => import('@/features/announcements/AnnouncementFormPage').then((m) => ({ default: m.AnnouncementFormPage })))
@@ -36,6 +37,9 @@ export function App() {
 
   return (
     <BrowserRouter>
+      {/* En todas las pantallas (también login e instalar): registra el service
+          worker para el modo sin conexión y avisa de versiones nuevas */}
+      <UpdatePrompt />
       <Routes>
         <Route element={<PublicOnly />}>
           <Route path="/login" element={<LoginPage />} />

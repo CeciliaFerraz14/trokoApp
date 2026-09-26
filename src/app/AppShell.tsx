@@ -7,7 +7,6 @@ import { useUnreadCount } from '@/features/announcements/api'
 import { useWallNews } from '@/features/wall/news'
 import { TabBar } from './TabBar'
 import { OfflineBanner } from './OfflineBanner'
-import { UpdatePrompt } from './UpdatePrompt'
 import { ErrorBoundary } from './ErrorBoundary'
 
 export function AppShell() {
@@ -30,7 +29,6 @@ export function AppShell() {
       </main>
       <OfflineBanner />
       <TabBar isAdmin={isAdmin} pendingCount={pending.data?.length ?? 0} unreadCount={unread} wallNews={wallNews.size} />
-      <UpdatePrompt />
     </div>
   )
 }
