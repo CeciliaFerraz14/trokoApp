@@ -37,6 +37,7 @@ await db.exec(readFileSync(`${ROOT}/migrations/0004_announcements_author_idx.sql
 await db.exec(readFileSync(`${ROOT}/migrations/0005_events.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0006_wall.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0007_admin.sql`, 'utf8'))
+await db.exec(readFileSync(`${ROOT}/migrations/0008_instrument_names.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8')) // idempotente
 
