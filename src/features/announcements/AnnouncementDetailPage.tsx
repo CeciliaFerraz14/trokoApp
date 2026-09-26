@@ -14,6 +14,9 @@ import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
 import { displayName } from '@/features/groups/api'
 import { Audience, useGroupMap } from '@/features/groups/audience'
+import { PhotoGrid } from '@/features/wall/PhotoGrid'
+import { VideoPreview } from '@/features/wall/VideoPreview'
+import { parseVideo } from '@/features/wall/video'
 import { canEditAnnouncement, useAnnouncement, useDeleteAnnouncement, useMarkRead, useSaveAnnouncement } from './api'
 
 export function AnnouncementDetailPage() {
@@ -48,6 +51,7 @@ export function AnnouncementDetailPage() {
   }
 
   const canEdit = canEditAnnouncement(me, a)
+  const link = parseVideo(a.link_url)
 
   const togglePin = () =>
     save.mutate(
@@ -56,7 +60,7 @@ export function AnnouncementDetailPage() {
     )
   const onDelete = () => {
     if (!confirm('¿Borrar este aviso? Desaparecerá para todo el mundo.')) return
-    remove.mutate(a.id, {
+    remove.mutate(a, {
       onSuccess: () => {
         toast('Aviso borrado')
         navigate('/avisos', { replace: true })
@@ -106,6 +110,8 @@ export function AnnouncementDetailPage() {
             </div>
           </div>
           {a.body && <Linkify text={a.body} className="text-lg leading-relaxed" />}
+          <PhotoGrid photos={a.photos} bucket="announcements" />
+          {link && <VideoPreview video={link} />}
           <Card className="text-sm text-muted">
             <p className="mb-1 font-semibold text-fg">Para</p>
             <Audience groupIds={a.group_ids} groups={groupMap} />

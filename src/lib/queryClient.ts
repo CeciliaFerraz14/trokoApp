@@ -35,8 +35,9 @@ export const PERSIST_MAX_AGE = WEEK
  * Versión de la copia guardada: al cambiarla, la app descarta la copia vieja al
  * actualizarse. Subirla cuando cambie la forma de algún dato guardado.
  * v2: los emails de admin y las solicitudes de grupo se guardaban como Map (se perdían).
+ * v3: los avisos llevan fotos y enlace.
  */
-export const PERSIST_BUSTER = 'v2'
+export const PERSIST_BUSTER = 'v3'
 
 /** Al cerrar sesión: borrar todo lo guardado para que no lo vea otra persona */
 export async function clearCachedData() {

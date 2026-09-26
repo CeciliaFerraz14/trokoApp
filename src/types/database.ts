@@ -55,9 +55,22 @@ export type Announcement = {
   group_ids: string[]
   important: boolean
   pinned: boolean
+  /** Enlace (vídeo, Spotify…), como en el muro */
+  link_url: string | null
   created_at: string
   updated_at: string
   edited_at: string | null
+}
+
+export type AnnouncementPhoto = {
+  id: string
+  announcement_id: string
+  /** <announcement_id>/<id>.jpg en el bucket privado "announcements" (miniatura: <id>_t.jpg) */
+  path: string
+  width: number
+  height: number
+  position: number
+  created_at: string
 }
 
 export type AnnouncementRead = {
@@ -207,8 +220,14 @@ export type Database = {
       announcements: {
         Row: Announcement
         Insert: Partial<Omit<Announcement, 'id' | 'author_id' | 'created_at' | 'updated_at' | 'edited_at'>> & { title: string }
-        Update: Partial<Pick<Announcement, 'title' | 'body' | 'group_ids' | 'important' | 'pinned'>>
+        Update: Partial<Pick<Announcement, 'title' | 'body' | 'group_ids' | 'important' | 'pinned' | 'link_url'>>
         Relationships: [Rel<'announcements_author_id_fkey', 'author_id', 'profiles'>]
+      }
+      announcement_photos: {
+        Row: AnnouncementPhoto
+        Insert: Partial<Omit<AnnouncementPhoto, 'created_at'>> & { announcement_id: string; path: string; width: number; height: number }
+        Update: Partial<Pick<AnnouncementPhoto, 'position'>>
+        Relationships: [Rel<'announcement_photos_announcement_id_fkey', 'announcement_id', 'announcements'>]
       }
       announcement_reads: {
         Row: AnnouncementRead

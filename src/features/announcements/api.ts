@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { removePhotoFiles, signPhotoSets, uploadPhotos, type SignedPhoto } from '@/lib/photos'
 import type { Announcement, Profile } from '@/types/database'
 import { useAuth } from '@/features/auth/AuthProvider'
 import type { Me } from '@/features/auth/useMe'
@@ -9,7 +10,10 @@ const LIMIT = 100
 /** Los avisos más antiguos que esto nunca cuentan como no leídos */
 const UNREAD_WINDOW_MS = 1000 * 60 * 60 * 24 * 30
 
-const SELECT = '*, author:profiles!announcements_author_id_fkey(id, full_name, nickname, avatar_url), reads:announcement_reads(count)'
+const SELECT =
+  '*, author:profiles!announcements_author_id_fkey(id, full_name, nickname, avatar_url), reads:announcement_reads(count), ' +
+  'photos:announcement_photos(id, path, width, height, position)'
+const BUCKET = 'announcements'
 
 export type AnnouncementAuthor = Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'>
 
@@ -22,15 +26,22 @@ export interface AnnouncementItem extends Announcement {
   read: boolean
   /** Cuenta para el globo de "no leídos" */
   unread: boolean
+  /** Fotos con sus URLs firmadas (bucket privado "announcements") */
+  photos: SignedPhoto[]
 }
 
-type Row = Announcement & { author: AnnouncementAuthor | null; reads: { count: number }[] }
+type Row = Announcement & {
+  author: AnnouncementAuthor | null
+  reads: { count: number }[]
+  photos: Omit<SignedPhoto, 'url' | 'thumbUrl'>[]
+}
 
-function toItem(row: Row, userId: string, readIds: Set<string>): AnnouncementItem {
+function toItem(row: Row, photos: SignedPhoto[], userId: string, readIds: Set<string>): AnnouncementItem {
   const { reads, ...rest } = row
   const read = row.author_id === userId || readIds.has(row.id)
   return {
     ...rest,
+    photos,
     readCount: reads[0]?.count ?? 0,
     read,
     unread: !read && Date.now() - new Date(row.created_at).getTime() < UNREAD_WINDOW_MS,
@@ -63,7 +74,8 @@ export function useAnnouncements() {
         if (e2) throw e2
         for (const r of reads ?? []) readIds.add(r.announcement_id)
       }
-      return rows.map((r) => toItem(r, userId!, readIds))
+      const photos = await signPhotoSets(BUCKET, rows.map((r) => r.photos))
+      return rows.map((r, i) => toItem(r, photos[i], userId!, readIds))
     },
     enabled: !!userId,
     // Para que el globo de la pestaña se actualice con la app abierta
@@ -88,7 +100,9 @@ export function useAnnouncement(id: string | undefined) {
       if (error) throw error
       if (!data) return null
       const cached = qc.getQueryData<AnnouncementItem[]>(['announcements', userId])?.find((a) => a.id === id)
-      return toItem(data as unknown as Row, userId!, new Set(cached?.read ? [id!] : []))
+      const row = data as unknown as Row
+      const [photos] = await signPhotoSets(BUCKET, [row.photos])
+      return toItem(row, photos, userId!, new Set(cached?.read ? [id!] : []))
     },
     placeholderData: () => qc.getQueryData<AnnouncementItem[]>(['announcements', userId])?.find((a) => a.id === id),
     enabled: !!id && !!userId,
@@ -116,36 +130,65 @@ function useInvalidateAnnouncements() {
     ])
 }
 
-export type AnnouncementInput = Pick<Announcement, 'title' | 'body' | 'group_ids' | 'important' | 'pinned'>
+export type AnnouncementInput = Pick<Announcement, 'title' | 'body' | 'group_ids' | 'important' | 'pinned' | 'link_url'>
 
+/**
+ * Crea o edita un aviso. Al crearlo con fotos: primero el aviso (el bucket solo
+ * deja subir a quien lo escribió), luego las fotos; si algo falla, se deshace.
+ */
 export function useSaveAnnouncement() {
   const invalidate = useInvalidateAnnouncements()
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<AnnouncementInput> & { id?: string }) => {
-      const { data, error } = id
-        ? await supabase.from('announcements').update(input).eq('id', id).select('id').single()
-        : await supabase
-            .from('announcements')
-            .insert({ ...input, title: input.title ?? '' })
-            .select('id')
-            .single()
+    mutationFn: async ({
+      id,
+      files = [],
+      onProgress,
+      ...input
+    }: Partial<AnnouncementInput> & { id?: string; files?: File[]; onProgress?: (done: number, total: number) => void }) => {
+      if (id) {
+        const { data, error } = await supabase.from('announcements').update(input).eq('id', id).select('id').single()
+        if (error) throw error
+        return data
+      }
+      const { data, error } = await supabase
+        .from('announcements')
+        .insert({ ...input, title: input.title ?? '' })
+        .select('id')
+        .single()
       if (error) throw error
+      if (files.length) {
+        try {
+          const { photos, uploaded } = await uploadPhotos(BUCKET, data.id, files, onProgress)
+          const { error: e2 } = await supabase.from('announcement_photos').insert(photos.map((p) => ({ ...p, announcement_id: data.id })))
+          if (e2) {
+            await supabase.storage.from(BUCKET).remove(uploaded)
+            throw e2
+          }
+        } catch (err) {
+          await supabase.from('announcements').delete().eq('id', data.id)
+          throw err
+        }
+      }
       return data
     },
     onSuccess: invalidate,
   })
 }
 
+/** Borra los archivos de las fotos y el aviso (las filas de fotos van en cascada) */
 export function useDeleteAnnouncement() {
   const qc = useQueryClient()
   const invalidate = useInvalidateAnnouncements()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('announcements').delete().eq('id', id)
+    mutationFn: async (item: Pick<AnnouncementItem, 'id' | 'photos'>) => {
+      // Primero los archivos: sin el aviso, sus fotos dejan de ser visibles y
+      // Storage ya no dejaría borrarlas
+      await removePhotoFiles(BUCKET, item.photos)
+      const { error } = await supabase.from('announcements').delete().eq('id', item.id)
       if (error) throw error
     },
-    onSuccess: (_d, id) => {
-      qc.removeQueries({ queryKey: ['announcement', id] })
+    onSuccess: (_d, item) => {
+      qc.removeQueries({ queryKey: ['announcement', item.id] })
       return invalidate()
     },
   })

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { ChevronLeft, ChevronRight, Loader2, MessageSquare, X } from 'lucide-react'
+import type { PhotoBucket } from '@/lib/photos'
 import { useFullPhotoUrl } from './api'
 
 export interface LightboxPhoto {
@@ -12,18 +13,20 @@ export interface LightboxPhoto {
 
 /** Visor de fotos a pantalla completa: flechas, deslizar y Escape */
 export function Lightbox({
+  bucket = 'wall',
   photos,
   index,
   onIndex,
   onClose,
 }: {
+  bucket?: PhotoBucket
   photos: LightboxPhoto[]
   index: number
   onIndex: (i: number) => void
   onClose: () => void
 }) {
   const photo = photos[index]
-  const full = useFullPhotoUrl(photo?.path, photo?.url)
+  const full = useFullPhotoUrl(bucket, photo?.path, photo?.url)
   const startX = useRef<number | null>(null)
   const go = (d: number) => onIndex((index + d + photos.length) % photos.length)
 

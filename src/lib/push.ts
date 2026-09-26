@@ -26,6 +26,10 @@ function base64UrlToBytes(value: string) {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0))
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return Promise.race([promise, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(message)), ms))])
+}
+
 async function detect(): Promise<PushState> {
   if (isIOS && !isStandalone()) return 'ios-install'
   if (!pushSupported()) return 'unsupported'
@@ -38,13 +42,18 @@ async function detect(): Promise<PushState> {
 async function enable() {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') throw new Error(permission === 'denied' ? 'Has bloqueado las notificaciones' : 'No se han activado')
-  const reg = await navigator.serviceWorker.ready
+  const reg = await withTimeout(navigator.serviceWorker.ready, 10_000, 'La app aún se está preparando. Vuelve a intentarlo en un momento.')
   const { data: key, error } = await supabase.rpc('push_public_key')
   if (error) throw error
   if (!key) throw new Error('Las notificaciones aún no están configuradas')
   const sub =
     (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(key) }))
+    // Sin conexión con el servicio de avisos del navegador, subscribe() puede no responder nunca
+    (await withTimeout(
+      reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(key) }),
+      20_000,
+      'No se han podido activar. Comprueba la conexión y vuelve a intentarlo.',
+    ))
   const json = sub.toJSON()
   const { error: e2 } = await supabase.rpc('save_push_subscription', {
     p_endpoint: sub.endpoint,

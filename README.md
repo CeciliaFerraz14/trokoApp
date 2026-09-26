@@ -33,6 +33,8 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0008_instrument_names.sql` | Renombra los instrumentos guardados a Fondo 1, Fondo 2, Surdo 3, Repique, Caja y Timbau |
 | `supabase/migrations/0009_group_requests.sql` | Solicitudes para entrar en grupos (las acepta o rechaza un admin) |
 | `supabase/migrations/0010_disable_invite_codes.sql` | Desactiva los códigos de invitación: todo pasa por la aprobación de un admin |
+| `supabase/migrations/0011_push.sql` | Notificaciones push (muro, aceptación en grupos, cuenta aprobada). Ver *Notificaciones* abajo |
+| `supabase/migrations/0012_announcement_media.sql` | Fotos y enlaces en los avisos, y su notificación push |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -107,6 +109,8 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 
 ## 7b. Avisos
 
+- **Fotos y enlaces**: como en el muro, hasta 6 fotos (bucket privado `announcements`: solo las ve quien puede ver el aviso) y un enlace de vídeo o música (YouTube, Instagram, TikTok, Spotify con reproductor). Las fotos se eligen al crear el aviso.
+
 - **Quién publica**: un admin, para toda la batucada o para los grupos que elija; la coordinación, solo para los grupos que coordina.
 - **Quién los ve**: los generales, todo el mundo; los de grupo, solo sus miembros (y los admins).
 - **Importante** los destaca en amarillo; **Fijar arriba** los deja los primeros hasta que se desfijan.
@@ -130,6 +134,14 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Comentarios y reacciones** (👏 ❤️ 😂 🥁 🔥, una por persona).
 - **Moderación**: la coordinación del grupo y los admins pueden borrar publicaciones y comentarios. Al borrar una publicación se borran también sus fotos.
 - **Tiempo real**: lo nuevo aparece sin recargar mientras el grupo está abierto.
+
+## 7e. Notificaciones
+
+- Cada persona las activa en su móvil en **Perfil → Notificaciones** (también hay una invitación en *Muro* y "Avísame cuando me acepten" en la pantalla de espera). En **iPhone** solo funcionan con la app **instalada en la pantalla de inicio** e iOS 16.4 o posterior.
+- Llegan cuando: alguien publica en el muro de tu grupo, se publica un aviso para ti (general o de tu grupo), te aceptan o te añaden a un grupo y cuando aprueban tu cuenta. Quien publica no recibe su propio aviso.
+- Funcionamiento: un trigger de la base de datos llama con `pg_net` a `api/push.ts` (Vercel), que pide a `push_prepare()` el mensaje y los destinatarios y los envía con Web Push. Las suscripciones caducadas se borran solas.
+- **Configuración** (ya hecha en el proyecto): las claves VAPID, el secreto compartido y la URL de envío están **solo** en la tabla `private.app_config` de Supabase (no en el repositorio ni en Vercel). Para montarlo en otro proyecto: generar claves con `npx web-push generate-vapid-keys` y rellenar esa tabla como indica la cabecera de `0011_push.sql`. Las llamadas y sus respuestas se ven en `net._http_response`.
+- Al cerrar sesión, ese móvil deja de recibir los avisos de esa cuenta.
 
 ## 8. Estructura
 
@@ -174,4 +186,5 @@ src/
 - [x] **3. Calendario y eventos**: categorías, recurrencias, asistencia, notas personales, .ics.
 - [x] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
 - [x] **5. Admin completo y pulido general**: resumen y uso del plan, contraseñas y borrado de cuentas desde la app, código de invitación para la coordinación, novedades del muro, próximo evento en Avisos, pantalla de error y carga diferida de pantallas.
-- [ ] **Más adelante**: notificaciones push, encuestas, repositorio de material.
+- [x] **Notificaciones push** (muro, avisos, aceptación en grupos, cuenta aprobada).
+- [ ] **Más adelante**: encuestas, repositorio de material.

@@ -25,9 +25,9 @@ export async function POST(request: Request) {
   const { kind, id1, id2 } = (await request.json().catch(() => ({}))) as { kind?: string; id1?: string; id2?: string }
   if (!secret || !kind || !id1) return new Response('Petición no válida', { status: 400 })
 
-  // Una publicación con fotos se guarda en dos pasos (publicación y fotos):
-  // se espera un momento para que el aviso diga "ha compartido 2 fotos"
-  if (kind === 'post') await sleep(1500)
+  // Publicaciones y avisos con fotos se guardan en dos pasos (texto y fotos):
+  // se espera un momento para que la notificación diga "ha compartido 2 fotos"
+  if (kind === 'post' || kind === 'announcement') await sleep(1500)
 
   const rpc = (fn: string, args: object) =>
     fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {

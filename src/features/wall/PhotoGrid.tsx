@@ -1,11 +1,11 @@
 import { useState, type CSSProperties } from 'react'
 import { ImageOff } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import type { WallPhoto } from './api'
+import type { PhotoBucket, SignedPhoto as WallPhoto } from '@/lib/photos'
 import { Lightbox } from './Lightbox'
 
 /** Fotos de una publicación: 1 grande, 2 en pareja, 3 en mosaico, 4+ en 2×2 con "+N" */
-export function PhotoGrid({ photos }: { photos: WallPhoto[] }) {
+export function PhotoGrid({ photos, bucket = 'wall' }: { photos: WallPhoto[]; bucket?: PhotoBucket }) {
   const [open, setOpen] = useState<number | null>(null)
   if (!photos.length) return null
   const shown = photos.slice(0, 4)
@@ -45,7 +45,7 @@ export function PhotoGrid({ photos }: { photos: WallPhoto[] }) {
         </div>
       )}
       {open !== null && (
-        <Lightbox photos={photos.map((p) => ({ path: p.path, url: p.url }))} index={open} onIndex={setOpen} onClose={() => setOpen(null)} />
+        <Lightbox bucket={bucket} photos={photos.map((p) => ({ path: p.path, url: p.url }))} index={open} onIndex={setOpen} onClose={() => setOpen(null)} />
       )}
     </>
   )

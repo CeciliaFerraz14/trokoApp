@@ -48,6 +48,7 @@ await db.exec(readFileSync(`${ROOT}/migrations/0009_group_requests.sql`, 'utf8')
 await db.exec(readFileSync(`${ROOT}/migrations/0010_disable_invite_codes.sql`, 'utf8'))
 // PGlite no tiene pg_net: se usa el simulado de arriba
 await db.exec(readFileSync(`${ROOT}/migrations/0011_push.sql`, 'utf8').replace(/create extension if not exists pg_net;/i, ''))
+await db.exec(readFileSync(`${ROOT}/migrations/0012_announcement_media.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8')) // idempotente
 
@@ -466,6 +467,31 @@ await as(null, `select push_forget('s3cret', array['https://push.example/i'])`, 
 check('se olvidan las caducadas', (await one(`select count(*)::int n from push_subscriptions`)).n === 0)
 check('anon no guarda suscripciones', !!(await asErr(null, `select save_push_subscription('https://x', 'k', 'a')`, [], 'anon')))
 check('nadie llama send_push directamente', !!(await asErr(H, `select send_push('post', gen_random_uuid())`)))
+
+console.log('Avisos con fotos y enlaces')
+// H (Raíz) e I (Brote, Raíz) de la sección anterior; A admin
+await as(H, `select save_push_subscription('https://push.example/h2', 'k', 'a')`)
+await db.exec(`delete from net.calls`)
+const ann = (await as(A, `insert into announcements (title, body, group_ids, link_url) values ('Bolo en Vegueta', '', $1, ' https://open.spotify.com/track/x ') returning *`, [[raiz]]))[0]
+check('aviso con enlace (recortado)', ann.link_url === 'https://open.spotify.com/track/x')
+check('enlace sin https rechazado', !!(await asErr(A, `insert into announcements (title, link_url) values ('x', 'ftp://malo')`)))
+check('un aviso nuevo envía notificación', (await calls()).some((c) => c.kind === 'announcement' && c.id1 === ann.id))
+const annPath = `${ann.id}/f.jpg`
+check('su autora sube la foto al bucket', (await as(A, `insert into storage.objects (bucket_id, name) values ('announcements', $1) returning id`, [annPath])).length === 1)
+check('otra persona no sube fotos al aviso', !!(await asErr(H, `insert into storage.objects (bucket_id, name) values ('announcements', $1)`, [`${ann.id}/g.jpg`])))
+check('ruta sin aviso rechazada', !!(await asErr(A, `insert into storage.objects (bucket_id, name) values ('announcements', 'x.jpg')`)))
+await as(A, `insert into announcement_photos (announcement_id, path, width, height) values ($1, $2, 10, 10)`, [ann.id, annPath])
+check('foto con ruta de otro aviso rechazada', !!(await asErr(A, `insert into announcement_photos (announcement_id, path, width, height) values ($1, $2, 10, 10)`, [ann.id, `${gen}/z.jpg`])))
+check('el grupo ve la foto', (await as(H, `select * from announcement_photos where announcement_id=$1`, [ann.id])).length === 1 &&
+  (await as(H, `select * from storage.objects where bucket_id='announcements'`)).length === 1)
+check('otro grupo no ve ni la foto ni el archivo', (await as(C, `select * from announcement_photos`)).length === 0 && (await as(C, `select * from storage.objects where bucket_id='announcements'`)).length === 0)
+const annMsg = (await as(null, `select push_prepare('s3cret', 'announcement', $1) p`, [ann.id], 'anon'))[0].p
+check('notificación del aviso: título, foto y solo a su grupo', annMsg.title === 'Aviso: Bolo en Vegueta' && annMsg.body.includes('ha compartido una foto') &&
+  annMsg.url === `/avisos/${ann.id}` && annMsg.subscriptions.every((s) => s.endpoint === 'https://push.example/h2') && annMsg.subscriptions.length === 1)
+await as(A, `update announcements set link_url = 'https://youtu.be/abc' where id=$1`, [ann.id])
+check('cambiar el enlace marca "editado"', !!(await one(`select edited_at from announcements where id=$1`, [ann.id])).edited_at)
+check('al borrar el aviso se borran sus fotos', (await as(A, `delete from announcements where id=$1 returning id`, [ann.id])).length === 1 &&
+  (await one(`select count(*)::int n from announcement_photos`)).n === 0)
 
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

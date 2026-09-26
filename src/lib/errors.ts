@@ -9,6 +9,8 @@ const translations: [RegExp, string][] = [
   [/signups not allowed|signup is disabled/i, 'El registro está desactivado ahora mismo.'],
   [/rate limit|too many requests/i, 'Demasiados intentos. Espera un momento y vuelve a probar.'],
   [/failed to fetch|network ?error|load failed|fetch failed/i, 'Sin conexión. Revisa tu internet y vuelve a intentarlo.'],
+  // Suscripción push rechazada por el navegador (va antes que "permission denied" genérico)
+  [/registration failed|push service/i, 'Este navegador no permite activar las notificaciones. Prueba desde la app instalada en el móvil.'],
   [/row-level security|permission denied/i, 'No tienes permiso para hacer esto.'],
   [/duplicate key.*groups_name_key/i, 'Ya existe un grupo con ese nombre.'],
   [/JWT expired/i, 'Tu sesión ha caducado. Vuelve a iniciar sesión.'],

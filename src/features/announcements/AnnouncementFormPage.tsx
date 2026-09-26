@@ -10,6 +10,9 @@ import { Switch } from '@/components/ui/Switch'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
 import { AudiencePicker, canPublish, useAudienceField } from '@/features/groups/audience'
+import { PhotoPicker } from '@/features/wall/PhotoPicker'
+import { VideoPreview } from '@/features/wall/VideoPreview'
+import { parseVideo } from '@/features/wall/video'
 import { canEditAnnouncement, useAnnouncement, useSaveAnnouncement } from './api'
 
 export function AnnouncementFormPage() {
@@ -25,6 +28,9 @@ export function AnnouncementFormPage() {
   const [body, setBody] = useState('')
   const [important, setImportant] = useState(false)
   const [pinned, setPinned] = useState(false)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [files, setFiles] = useState<File[]>([])
+  const [progress, setProgress] = useState<[number, number] | null>(null)
   const audience = useAudienceField({ isNew })
   const [error, setError] = useState<string | null>(null)
 
@@ -36,6 +42,7 @@ export function AnnouncementFormPage() {
     setBody(loaded.body)
     setImportant(loaded.important)
     setPinned(loaded.pinned)
+    setLinkUrl(loaded.link_url ?? '')
     audience.load(loaded.group_ids)
     // Solo al llegar el aviso: no pisar lo que se esté escribiendo si se recarga
   }, [loaded?.id])
@@ -55,16 +62,31 @@ export function AnnouncementFormPage() {
     )
   }
 
+  const link = parseVideo(linkUrl)
+  const linkInvalid = !!linkUrl.trim() && !link
+
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     if (!title.trim()) return setError('El aviso necesita un título.')
     const group_ids = audience.value()
     if (!group_ids) return setError('Elige al menos un grupo.')
+    if (linkInvalid) return setError('El enlace tiene que empezar por https://')
 
     save.mutate(
-      { id, title: title.trim(), body: body.trim(), important, pinned, group_ids },
       {
+        id,
+        title: title.trim(),
+        body: body.trim(),
+        important,
+        pinned,
+        group_ids,
+        link_url: link?.url ?? null,
+        files: isNew ? files : [],
+        onProgress: (done, total) => setProgress([done, total]),
+      },
+      {
+        onSettled: () => setProgress(null),
         onSuccess: (a) => {
           toast(isNew ? 'Aviso publicado' : 'Cambios guardados')
           navigate(`/avisos/${a.id}`, { replace: true })
@@ -89,6 +111,28 @@ export function AnnouncementFormPage() {
             hint="Opcional. Los enlaces se podrán pulsar."
           />
 
+          {isNew ? (
+            <PhotoPicker files={files} onChange={setFiles} note="Se reducen antes de subirlas. Solo las ve quien puede ver el aviso." />
+          ) : (
+            !!existing.data?.photos.length && (
+              <p className="text-sm text-muted">Las fotos no se pueden cambiar: si hace falta, borra el aviso y vuelve a publicarlo.</p>
+            )
+          )}
+
+          <div className="space-y-2">
+            <TextField
+              label="Enlace de vídeo o música (opcional)"
+              type="url"
+              inputMode="url"
+              placeholder="https://youtu.be/… o https://open.spotify.com/…"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              error={linkInvalid ? 'Pega un enlace que empiece por https://' : null}
+              hint="De YouTube, Instagram, TikTok o Spotify."
+            />
+            {link && <VideoPreview video={link} />}
+          </div>
+
           <AudiencePicker field={audience} noun="aviso" />
 
           <div className="space-y-2">
@@ -110,7 +154,11 @@ export function AnnouncementFormPage() {
 
           <FormError>{error}</FormError>
           <Button type="submit" block loading={save.isPending}>
-            {isNew ? 'Publicar aviso' : 'Guardar cambios'}
+            {progress && progress[1] > 0 && progress[0] < progress[1]
+              ? `Subiendo fotos ${progress[0] + 1}/${progress[1]}…`
+              : isNew
+                ? 'Publicar aviso'
+                : 'Guardar cambios'}
           </Button>
         </form>
       </Page>

@@ -1,42 +1,24 @@
 import { useEffect, useRef } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { compressImage } from '@/lib/image'
+import { removePhotoFiles, signPaths, signPhotoSets, SIGNED_TTL, thumbPath, uploadPhotos, type PhotoBucket, type SignedPhoto } from '@/lib/photos'
 import { useAuth } from '@/features/auth/AuthProvider'
 import type { Post, PostComment, PostPhoto, Profile, ReactionEmoji } from '@/types/database'
 
+export { MAX_PHOTOS, thumbPath } from '@/lib/photos'
+
 const PAGE = 15
-/** Las URLs firmadas duran una semana (la caché offline también) */
-const SIGNED_TTL = 60 * 60 * 24 * 7
 const BUCKET = 'wall'
 
 export type WallAuthor = Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'>
 
-export interface WallPhoto extends Pick<PostPhoto, 'id' | 'path' | 'width' | 'height' | 'position'> {
-  /** URL firmada de la miniatura (640 px) */
-  thumbUrl: string | null
-  /** URL firmada de la foto grande (1600 px) */
-  url: string | null
-}
+export type WallPhoto = SignedPhoto
 
 export interface WallPost extends Post {
   author: WallAuthor | null
   photos: WallPhoto[]
   commentCount: number
   reactions: { emoji: ReactionEmoji; user_id: string }[]
-}
-
-/** Miniatura guardada junto a la foto: <id>.jpg → <id>_t.jpg */
-export const thumbPath = (path: string) => path.replace(/\.jpg$/, '_t.jpg')
-
-/** Firma rutas del bucket privado en una sola llamada */
-async function signPaths(paths: string[]) {
-  const urls = new Map<string, string>()
-  if (!paths.length) return urls
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, SIGNED_TTL)
-  if (error) throw error
-  for (const r of data ?? []) if (r.signedUrl && r.path) urls.set(r.path, r.signedUrl)
-  return urls
 }
 
 const POST_SELECT =
@@ -51,20 +33,8 @@ type PostRow = Post & {
 }
 
 async function toPosts(rows: PostRow[]): Promise<WallPost[]> {
-  // Una sola foto se ve grande; varias, en cuadrícula de miniaturas
-  const paths = rows.flatMap((r) => r.photos.map((p) => (r.photos.length === 1 ? p.path : thumbPath(p.path))))
-  const urls = await signPaths(paths)
-  return rows.map(({ comments, photos, ...post }) => ({
-    ...post,
-    commentCount: comments[0]?.count ?? 0,
-    photos: [...photos]
-      .sort((a, b) => a.position - b.position)
-      .map((p) => ({
-        ...p,
-        url: photos.length === 1 ? (urls.get(p.path) ?? null) : null,
-        thumbUrl: urls.get(photos.length === 1 ? p.path : thumbPath(p.path)) ?? null,
-      })),
-  }))
+  const signed = await signPhotoSets(BUCKET, rows.map((r) => r.photos))
+  return rows.map(({ comments, ...post }, i) => ({ ...post, commentCount: comments[0]?.count ?? 0, photos: signed[i] }))
 }
 
 /** Publicaciones de un grupo, de más nueva a más antigua, por páginas */
@@ -134,7 +104,7 @@ export function useGallery(groupId: string | undefined) {
         .order('position')
         .limit(300)
       if (error) throw error
-      const urls = await signPaths((data ?? []).map((p) => thumbPath(p.path)))
+      const urls = await signPaths(BUCKET, (data ?? []).map((p) => thumbPath(p.path)))
       return (data ?? []).map((p) => ({ ...p, thumbUrl: urls.get(thumbPath(p.path)) ?? null }))
     },
     enabled: !!groupId,
@@ -142,10 +112,10 @@ export function useGallery(groupId: string | undefined) {
 }
 
 /** URL firmada de la foto grande (para el visor), bajo demanda */
-export function useFullPhotoUrl(path: string | undefined, known?: string | null) {
+export function useFullPhotoUrl(bucket: PhotoBucket, path: string | undefined, known?: string | null) {
   return useQuery({
-    queryKey: ['wall-photo', path],
-    queryFn: async () => (await signPaths([path!])).get(path!) ?? null,
+    queryKey: ['photo-url', bucket, path],
+    queryFn: async () => (await signPaths(bucket, [path!])).get(path!) ?? null,
     enabled: !!path && !known,
     initialData: known ?? undefined,
     staleTime: (SIGNED_TTL - 3600) * 1000,
@@ -200,7 +170,6 @@ function useInvalidateWall() {
     ])
 }
 
-export const MAX_PHOTOS = 6
 
 /**
  * Publica: comprime y sube las fotos (grande + miniatura) a la carpeta de la
@@ -224,28 +193,9 @@ export function useCreatePost() {
       onProgress?: (done: number, total: number) => void
     }) => {
       const postId = crypto.randomUUID()
-      const uploaded: string[] = []
-      const photos: { id: string; path: string; width: number; height: number; position: number }[] = []
+      const { photos, uploaded } = await uploadPhotos(BUCKET, `${groupId}/${postId}`, files, onProgress)
       let postCreated = false
       try {
-        for (const [i, file] of files.entries()) {
-          onProgress?.(i, files.length)
-          const id = crypto.randomUUID()
-          const path = `${groupId}/${postId}/${id}.jpg`
-          const full = await compressImage(file, { maxSize: 1600, quality: 0.8 })
-          const thumb = await compressImage(file, { maxSize: 640, quality: 0.75 })
-          for (const [p, blob] of [
-            [path, full.blob],
-            [thumbPath(path), thumb.blob],
-          ] as const) {
-            const { error } = await supabase.storage.from(BUCKET).upload(p, blob, { contentType: 'image/jpeg' })
-            if (error) throw error
-            uploaded.push(p)
-          }
-          photos.push({ id, path, width: full.width, height: full.height, position: i })
-        }
-        onProgress?.(files.length, files.length)
-
         const { error } = await supabase.from('posts').insert({ id: postId, group_id: groupId, body: body.trim(), video_url: videoUrl })
         if (error) throw error
         postCreated = true
@@ -284,9 +234,8 @@ export function useDeletePost() {
       const { data, error } = await supabase.from('posts').delete().eq('id', post.id).select('id')
       if (error) throw error
       if (!data?.length) throw new Error('No tienes permiso para borrar esta publicación.')
-      const files = post.photos.flatMap((p) => [p.path, thumbPath(p.path)])
       // Si fallara, quedan archivos sin publicación pero nadie puede llegar a ellos
-      if (files.length) await supabase.storage.from(BUCKET).remove(files)
+      await removePhotoFiles(BUCKET, post.photos)
     },
     onSuccess: (_d, post) => {
       qc.removeQueries({ queryKey: ['post', post.id] })
