@@ -35,4 +35,6 @@ export const PERSIST_MAX_AGE = WEEK
 export async function clearCachedData() {
   queryClient.clear()
   await persister.removeClient()
+  // Fotos privadas del muro guardadas por el service worker
+  if ('caches' in window) await caches.delete('wall-photos')
 }

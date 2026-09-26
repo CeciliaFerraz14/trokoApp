@@ -16,7 +16,10 @@ export interface Me {
   canManageGroup: (groupId: string) => boolean
 }
 
-async function fetchMe(userId: string): Promise<Me> {
+/** Lo que se guarda en caché (y en IndexedDB): solo datos, sin funciones */
+type MeData = Omit<Me, 'canManageGroup'>
+
+async function fetchMe(userId: string): Promise<MeData> {
   const [{ data: profile, error: e1 }, { data: rows, error: e2 }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', userId).single(),
     supabase.from('group_members').select('role, group:groups(*)').eq('user_id', userId),
@@ -29,15 +32,18 @@ async function fetchMe(userId: string): Promise<Me> {
     .filter((r) => !r.group.archived_at)
     .sort((a, b) => a.group.sort_order - b.group.sort_order)
 
-  const isAdmin = profile.role === 'admin' && profile.status === 'active'
-  const coordinated = new Set(memberships.filter((m) => m.role === 'coordinator').map((m) => m.group.id))
-
   return {
     profile,
     memberships,
-    isAdmin,
-    canManageGroup: (id) => isAdmin || coordinated.has(id),
+    isAdmin: profile.role === 'admin' && profile.status === 'active',
   }
+}
+
+// Las funciones se añaden al leer: la caché persistida en IndexedDB se guarda
+// como JSON y perdería cualquier función guardada en los datos.
+function withHelpers(data: MeData): Me {
+  const coordinated = new Set(data.memberships.filter((m) => m.role === 'coordinator').map((m) => m.group.id))
+  return { ...data, canManageGroup: (id) => data.isAdmin || coordinated.has(id) }
 }
 
 /** Perfil y grupos de la persona que ha iniciado sesión */
@@ -47,6 +53,7 @@ export function useMe() {
   return useQuery({
     queryKey: ['me', userId],
     queryFn: () => fetchMe(userId!),
+    select: withHelpers,
     enabled: !!userId,
   })
 }

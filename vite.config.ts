@@ -42,6 +42,18 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
+            // Fotos del muro (bucket privado): las URLs firmadas cambian de token,
+            // así que se cachean por ruta ignorando la query. Se borra al cerrar sesión.
+            urlPattern: ({ url }) => url.pathname.startsWith('/storage/v1/object/sign/wall/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'wall-photos',
+              matchOptions: { ignoreSearch: true },
+              expiration: { maxEntries: 400, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             // Avatares y, más adelante, imágenes públicas de Supabase Storage
             urlPattern: ({ url }) => url.pathname.startsWith('/storage/v1/object/public/'),
             handler: 'CacheFirst',

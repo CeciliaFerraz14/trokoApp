@@ -12,6 +12,8 @@ import { EventFormPage } from '@/features/calendar/EventFormPage'
 import { SubscribePage } from '@/features/calendar/SubscribePage'
 import { MyGroupsPage } from '@/features/groups/MyGroupsPage'
 import { GroupPage } from '@/features/groups/GroupPage'
+import { ComposerPage } from '@/features/wall/ComposerPage'
+import { PostPage } from '@/features/wall/PostPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { EditProfilePage } from '@/features/profile/EditProfilePage'
 import { ChangePasswordPage } from '@/features/profile/ChangePasswordPage'
@@ -55,6 +57,8 @@ export function App() {
             <Route path="/calendario/:id/editar" element={<EventFormPage />} />
             <Route path="/muro" element={<MyGroupsPage />} />
             <Route path="/muro/:groupId" element={<GroupPage />} />
+            <Route path="/muro/:groupId/nueva" element={<ComposerPage />} />
+            <Route path="/muro/:groupId/p/:postId" element={<PostPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/perfil/editar" element={<EditProfilePage />} />
             <Route path="/perfil/contrasena" element={<ChangePasswordPage />} />

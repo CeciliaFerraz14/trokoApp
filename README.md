@@ -28,6 +28,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0003_announcements.sql` | Tablón de avisos (generales o por grupos, importantes, fijados) y control de leídos |
 | `supabase/migrations/0004_announcements_author_idx.sql` | Índice de autoría de avisos |
 | `supabase/migrations/0005_events.sql` | Calendario: eventos, repeticiones, asistencia, notas personales y suscripción .ics |
+| `supabase/migrations/0006_wall.sql` | Muro de grupos: publicaciones, fotos (bucket privado), comentarios, reacciones y tiempo real |
 | `supabase/seed.sql` | Los grupos actuales (Puertas Abiertas, Semilla, Brote, Raíz, Bloco, Timbau, Mistura, Utrillo). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -91,7 +92,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Código de invitación**: cada grupo tiene uno (Admin → Grupos → grupo). Quien se registre con el código entra directamente en ese grupo sin esperar. El admin puede regenerarlo cuando quiera. Una cuenta rechazada no puede usar códigos.
 - **Roles**:
   - **Admin**: gestiona todo.
-  - **Coordinador/a**: por grupo. Publica avisos para sus grupos; más adelante, eventos y moderación del muro (fases 3 y 4).
+  - **Coordinador/a**: por grupo. Publica avisos y eventos para sus grupos y modera su muro.
   - **Miembro**.
 - **Contraseña olvidada**: mientras no haya un servidor de correo configurado, un admin la restablece con `supabase/reset_password.sql`. Después la persona puede cambiarla en *Perfil → Cambiar contraseña*.
 - Los emails solo los ven los admins.
@@ -113,10 +114,19 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Mi nota**: nota privada por evento (solo la ve quien la escribe).
 - **Calendario del móvil** (Perfil → *Calendario en el móvil*): suscripción `.ics` al Calendario de Apple o Google Calendar, servida por `api/ics.ts`. Usa un enlace secreto personal que se puede regenerar. Solo funciona desplegado en Vercel (en `npm run dev` no hay funciones de `api/`).
 
+## 7d. Muro de grupos
 
+- Cada grupo tiene su **muro** (pestaña *Muro* → grupo): lo ven y escriben solo sus miembros (y los admins).
+- **Publicaciones**: texto, hasta 6 fotos y un enlace de vídeo (YouTube, Instagram…; los vídeos no se suben). Quien publica puede editar el texto.
+- **Fotos**: se reducen en el móvil (1600 px + miniatura de 640 px) y se guardan en el bucket **privado** `wall`: solo las ven las personas del grupo, mediante enlaces temporales. Pestaña **Galería** con todas las fotos del grupo.
+- **Comentarios y reacciones** (👏 ❤️ 😂 🥁 🔥, una por persona).
+- **Moderación**: la coordinación del grupo y los admins pueden borrar publicaciones y comentarios. Al borrar una publicación se borran también sus fotos.
+- **Tiempo real**: lo nuevo aparece sin recargar mientras el grupo está abierto.
+
+## 8. Estructura
 
 ```
-api/                  Funciones de Vercel (keepalive; más adelante .ics)
+api/                  Funciones de Vercel: keepalive y calendario .ics
 logos/                Logos originales
 public/               Logos limpios e iconos de la PWA (generados con npm run icons)
 scripts/              prepare-logos.mjs
@@ -129,7 +139,7 @@ supabase/
 src/
   app/                Router, AppShell, barra inferior, guardas, aviso de actualización
   components/ui/      Botones, campos, tarjetas, estados vacío/carga/error, toasts…
-  features/           auth · admin · groups · profile · install · announcements · calendar
+  features/           auth · admin · groups · profile · install · announcements · calendar · wall
   lib/                Supabase, caché offline, compresión de imágenes, plataforma, tema
   types/database.ts   Tipos de la base de datos
   index.css           Tokens de marca (brand-black, brand-blue…) y temas oscuro/claro
@@ -154,6 +164,6 @@ src/
 - [x] **1. Base**: PWA, autenticación, registro con aprobación, roles, grupos, códigos de invitación, perfil, panel de admin y navegación.
 - [x] **2. Avisos**: tablón por grupos, fijados, importantes, no leídos.
 - [x] **3. Calendario y eventos**: categorías, recurrencias, asistencia, notas personales, .ics.
-- [ ] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
+- [x] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
 - [ ] **5. Admin completo y pulido general**.
 - [ ] **Más adelante**: notificaciones push, encuestas, repositorio de material.

@@ -14,7 +14,8 @@ await db.exec(`
   create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema storage;
   create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner_id text default auth.uid()::text);
+  create publication supabase_realtime;
   alter table storage.objects enable row level security;
   create function storage.foldername(name text) returns text[] language sql immutable as $$
     select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1] $$;
@@ -30,6 +31,7 @@ await db.exec(readFileSync(`${ROOT}/migrations/0002_function_grants.sql`, 'utf8'
 await db.exec(readFileSync(`${ROOT}/migrations/0003_announcements.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0004_announcements_author_idx.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0005_events.sql`, 'utf8'))
+await db.exec(readFileSync(`${ROOT}/migrations/0006_wall.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8')) // idempotente
 
@@ -274,6 +276,64 @@ await as(A, `update profiles set status='active' where id=$1`, [E])
 
 check('borrar la serie desde una fecha', (await as(B, `delete from events where series_id=$1 and starts_at >= $2 returning id`, [series, weeks[1].starts_at])).length === 2)
 check('al borrar se borran asistencia y notas', (await one(`select (select count(*) from event_attendance where user_id=$1) + (select count(*) from event_notes where user_id=$1) n`, [E])).n == 0)
+
+console.log('Muro')
+const insPost = (uid, group, body, extra = '') =>
+  as(uid, `insert into posts (group_id, body, author_id${extra ? ', video_url' : ''}) values ($1, $2, $3${extra ? ', $4' : ''}) returning *`,
+    extra ? [group, body, A, extra] : [group, body, A])
+const post = (await insPost(E, raiz, '  ¡Qué ensayo!  ', 'https://youtu.be/abc'))[0]
+check('miembro publica en su grupo', !!post && post.author_id === E && post.body === '¡Qué ensayo!')
+check('otro grupo no lo ve', (await as(C, `select id from posts`)).length === 0)
+check('admin lo ve', (await as(A, `select id from posts where id=$1`, [post.id])).length === 1)
+check('no publica en grupo ajeno', !!(await asErr(C, `insert into posts (group_id, body) values ($1, 'x')`, [raiz])))
+check('rechazada no publica', !!(await asErr(D, `insert into posts (group_id, body) values ($1, 'x')`, [brote])))
+check('vídeo sin https rechazado', !!(await asErr(E, `insert into posts (group_id, video_url) values ($1, 'javascript:alert(1)')`, [raiz])))
+check('admin publica en cualquier grupo', (await as(A, `insert into posts (group_id, body) values ($1, 'Hola') returning id`, [brote])).length === 1)
+await as(E, `update posts set body='¡Qué ensayazo!' where id=$1`, [post.id])
+const edited = await one(`select body, edited_at, group_id from posts where id=$1`, [post.id])
+check('autora edita y queda marcado', edited.body === '¡Qué ensayazo!' && !!edited.edited_at)
+check('no se mueve de grupo', (await as(E, `update posts set group_id=$2 where id=$1 returning group_id`, [post.id, brote]))[0].group_id === raiz)
+check('coordinadora no edita lo ajeno', (await as(B, `update posts set body='x' where id=$1 returning id`, [post.id])).length === 0)
+
+console.log('Fotos, comentarios y reacciones')
+const photoPath = `${raiz}/${post.id}/a.jpg`
+check('foto con ruta correcta', (await as(E, `insert into post_photos (post_id, path, width, height, group_id) values ($1, $2, 800, 600, $3) returning group_id`, [post.id, photoPath, brote]))[0].group_id === raiz)
+check('foto con ruta de otro grupo rechazada', !!(await asErr(E, `insert into post_photos (post_id, path, width, height) values ($1, $2, 800, 600)`, [post.id, `${brote}/${post.id}/b.jpg`])))
+check('no añade fotos a lo ajeno', !!(await asErr(B, `insert into post_photos (post_id, path, width, height) values ($1, $2, 800, 600)`, [post.id, `${raiz}/${post.id}/c.jpg`])))
+check('otro grupo no ve las fotos', (await as(C, `select * from post_photos`)).length === 0)
+const com = (await as(B, `insert into post_comments (post_id, body, author_id) values ($1, ' ¡Bien! ', $2) returning *`, [post.id, E]))[0]
+check('comentar (autoría y grupo automáticos)', com.author_id === B && com.group_id === raiz && com.body === '¡Bien!')
+check('otro grupo no comenta', !!(await asErr(C, `insert into post_comments (post_id, body) values ($1, 'x')`, [post.id])))
+check('comentario vacío rechazado', !!(await asErr(E, `insert into post_comments (post_id, body) values ($1, '  ')`, [post.id])))
+const comE = (await as(E, `insert into post_comments (post_id, body) values ($1, 'Gracias') returning id`, [post.id]))[0]
+check('otra persona no borra comentario ajeno', (await as(C, `delete from post_comments where id=$1 returning id`, [comE.id])).length === 0)
+check('coordinación modera comentarios', (await as(B, `delete from post_comments where id=$1 returning id`, [comE.id])).length === 1)
+const react = (uid, emoji) => as(uid, `insert into post_reactions (post_id, user_id, emoji) values ($1, $2, $3)
+  on conflict (post_id, user_id) do update set emoji = excluded.emoji returning *`, [post.id, uid, emoji])
+await react(E, '👏'); await react(E, '🔥')
+check('reaccionar y cambiar de emoji', (await as(B, `select emoji from post_reactions where user_id=$1`, [E]))[0]?.emoji === '🔥')
+check('emoji no permitido', !!(await asErr(B, `insert into post_reactions (post_id, user_id, emoji) values ($1, $2, '💩')`, [post.id, B])))
+check('otro grupo no reacciona', !!(await asErr(C, `insert into post_reactions (post_id, user_id, emoji) values ($1, $2, '👏')`, [post.id, C])))
+check('no reacciona por otra persona', !!(await asErr(B, `insert into post_reactions (post_id, user_id, emoji) values ($1, $2, '👏')`, [post.id, E])))
+
+console.log('Storage del muro')
+const up = (uid, name) => as(uid, `insert into storage.objects (bucket_id, name) values ('wall', $1) returning id`, [name])
+check('miembro sube foto a su grupo', (await up(E, photoPath)).length === 1)
+check('no sube a otro grupo', !!(await asErr(C, `insert into storage.objects (bucket_id, name) values ('wall', $1)`, [`${raiz}/${post.id}/z.jpg`])))
+check('ruta sin publicación rechazada', !!(await asErr(E, `insert into storage.objects (bucket_id, name) values ('wall', $1)`, [`${raiz}/z.jpg`])))
+check('ruta rara: se rechaza sin romper la consulta', /row-level security/.test(await asErr(E, `insert into storage.objects (bucket_id, name) values ('wall', 'hola/que/tal.jpg')`)))
+check('otro grupo no ve la foto', (await as(C, `select * from storage.objects where bucket_id='wall'`)).length === 0)
+check('el grupo ve la foto', (await as(B, `select * from storage.objects where bucket_id='wall'`)).length === 1)
+check('otro grupo no borra la foto', (await as(C, `delete from storage.objects where name=$1 returning id`, [photoPath])).length === 0)
+check('avatares siguen funcionando', (await as(E, `insert into storage.objects (bucket_id, name) values ('avatars', $1) returning id`, [`${E}/avatar.jpg`])).length === 1)
+
+console.log('Moderación del muro')
+check('miembro no borra publicación ajena', (await as(C, `delete from posts where id=$1 returning id`, [post.id])).length === 0)
+check('coordinación borra la foto del storage', (await as(B, `delete from storage.objects where name=$1 returning id`, [photoPath])).length === 1)
+check('coordinación borra la publicación', (await as(B, `delete from posts where id=$1 returning id`, [post.id])).length === 1)
+check('se borran fotos, comentarios y reacciones', (await one(`select (select count(*) from post_photos) + (select count(*) from post_comments) + (select count(*) from post_reactions) n`)).n == 0)
+const own = (await insPost(E, raiz, 'Mío'))[0]
+check('autora borra lo suyo', (await as(E, `delete from posts where id=$1 returning id`, [own.id])).length === 1)
 
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

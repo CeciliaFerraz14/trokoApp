@@ -1,19 +1,24 @@
 import { useSearchParams, useParams } from 'react-router'
-import { MessageSquareHeart, UsersRound } from 'lucide-react'
+import { UsersRound } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList, Spinner } from '@/components/ui/States'
 import { Tabs } from '@/components/ui/Tabs'
+import { Gallery } from '@/features/wall/Gallery'
+import { WallFeed } from '@/features/wall/WallFeed'
+import { useWallRealtime } from '@/features/wall/api'
 import { displayName, useGroup, useGroupMembers } from './api'
 
-type Tab = 'muro' | 'miembros'
+type Tab = 'muro' | 'galeria' | 'miembros'
 
 export function GroupPage() {
   const { groupId } = useParams()
   const [params, setParams] = useSearchParams()
   const tab = (params.get('tab') as Tab) || 'muro'
   const group = useGroup(groupId)
+  // Nuevas publicaciones, comentarios y reacciones aparecen solos
+  useWallRealtime(groupId)
 
   if (group.isPending) return <><PageHeader title="Grupo" back /><Spinner /></>
   if (group.isError) return <><PageHeader title="Grupo" back /><ErrorState error={group.error} onRetry={() => group.refetch()} /></>
@@ -30,16 +35,11 @@ export function GroupPage() {
           onChange={(t) => setParams({ tab: t }, { replace: true })}
           options={[
             { value: 'muro', label: 'Muro' },
+            { value: 'galeria', label: 'Galería' },
             { value: 'miembros', label: 'Miembros' },
           ]}
         />
-        {tab === 'muro' ? (
-          <EmptyState icon={<MessageSquareHeart className="size-8" />} title="El muro está en camino">
-            Pronto podréis compartir fotos, comentarios y reacciones con el grupo.
-          </EmptyState>
-        ) : (
-          <MembersList groupId={g.id} />
-        )}
+        {tab === 'muro' ? <WallFeed groupId={g.id} /> : tab === 'galeria' ? <Gallery groupId={g.id} /> : <MembersList groupId={g.id} />}
       </Page>
     </>
   )

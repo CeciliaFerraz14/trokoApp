@@ -99,6 +99,49 @@ export type EventNote = {
   updated_at: string
 }
 
+export type ReactionEmoji = '👏' | '❤️' | '😂' | '🥁' | '🔥'
+
+export type Post = {
+  id: string
+  group_id: string
+  author_id: string | null
+  body: string
+  /** Enlace de vídeo (YouTube, Instagram…): los vídeos no se suben */
+  video_url: string | null
+  created_at: string
+  updated_at: string
+  edited_at: string | null
+}
+
+export type PostPhoto = {
+  id: string
+  post_id: string
+  group_id: string
+  /** <group_id>/<post_id>/<id>.jpg en el bucket privado "wall" (miniatura: <id>_t.jpg) */
+  path: string
+  width: number
+  height: number
+  position: number
+  created_at: string
+}
+
+export type PostComment = {
+  id: string
+  post_id: string
+  group_id: string
+  author_id: string | null
+  body: string
+  created_at: string
+}
+
+export type PostReaction = {
+  post_id: string
+  user_id: string
+  group_id: string
+  emoji: ReactionEmoji
+  created_at: string
+}
+
 /** Estado completo de una fecha de la serie para update_event_series */
 export type EventSeriesRow = Pick<
   CalendarEvent,
@@ -180,6 +223,41 @@ export type Database = {
         Relationships: [
           Rel<'event_notes_event_id_fkey', 'event_id', 'events'>,
           Rel<'event_notes_user_id_fkey', 'user_id', 'profiles'>,
+        ]
+      }
+      posts: {
+        Row: Post
+        Insert: Partial<Omit<Post, 'author_id' | 'created_at' | 'updated_at' | 'edited_at'>> & { group_id: string }
+        Update: Partial<Pick<Post, 'body' | 'video_url'>>
+        Relationships: [
+          Rel<'posts_author_id_fkey', 'author_id', 'profiles'>,
+          Rel<'posts_group_id_fkey', 'group_id', 'groups'>,
+        ]
+      }
+      post_photos: {
+        Row: PostPhoto
+        Insert: Partial<Omit<PostPhoto, 'group_id' | 'created_at'>> & { post_id: string; path: string; width: number; height: number }
+        Update: Partial<Pick<PostPhoto, 'position'>>
+        Relationships: [Rel<'post_photos_post_id_fkey', 'post_id', 'posts'>, Rel<'post_photos_group_id_fkey', 'group_id', 'groups'>]
+      }
+      post_comments: {
+        Row: PostComment
+        Insert: { post_id: string; body: string }
+        Update: Partial<Pick<PostComment, 'body'>>
+        Relationships: [
+          Rel<'post_comments_post_id_fkey', 'post_id', 'posts'>,
+          Rel<'post_comments_author_id_fkey', 'author_id', 'profiles'>,
+          Rel<'post_comments_group_id_fkey', 'group_id', 'groups'>,
+        ]
+      }
+      post_reactions: {
+        Row: PostReaction
+        Insert: { post_id: string; user_id: string; emoji: ReactionEmoji }
+        Update: { emoji: ReactionEmoji }
+        Relationships: [
+          Rel<'post_reactions_post_id_fkey', 'post_id', 'posts'>,
+          Rel<'post_reactions_user_id_fkey', 'user_id', 'profiles'>,
+          Rel<'post_reactions_group_id_fkey', 'group_id', 'groups'>,
         ]
       }
     }
