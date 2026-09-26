@@ -8,7 +8,8 @@ const variants: Record<Variant, string> = {
   primary: 'bg-brand-blue text-brand-black hover:bg-brand-blue-light active:bg-brand-blue-dark',
   secondary: 'bg-surface-2 text-fg border border-line hover:border-brand-blue',
   ghost: 'text-accent hover:bg-surface-2',
-  danger: 'bg-transparent text-danger border border-danger/60 hover:bg-danger/10',
+  // Fondo opaco (no transparente) para que no se vea el motivo del fondo a través
+  danger: 'bg-bg text-danger border border-danger/60 hover:bg-[color-mix(in_srgb,var(--danger)_10%,var(--bg))]',
 }
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {

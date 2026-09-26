@@ -39,7 +39,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center px-6 py-14 text-center">
-      {icon && <div className="mb-4 grid size-16 place-items-center rounded-full bg-brand-blue/15 text-accent">{icon}</div>}
+      {icon && <div className="mb-4 grid size-16 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-brand-blue)_15%,var(--bg))] text-accent">{icon}</div>}
       <h2 className="text-xl font-semibold">{title}</h2>
       {children && <div className="mt-2 max-w-xs text-muted">{children}</div>}
       {action && <div className="mt-6">{action}</div>}
@@ -50,7 +50,7 @@ export function EmptyState({
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   return (
     <div role="alert" className="flex flex-col items-center px-6 py-14 text-center">
-      <div className="mb-4 grid size-16 place-items-center rounded-full bg-danger/15 text-danger">
+      <div className="mb-4 grid size-16 place-items-center rounded-full bg-[color-mix(in_srgb,var(--danger)_15%,var(--bg))] text-danger">
         <AlertTriangle className="size-8" aria-hidden />
       </div>
       <h2 className="text-xl font-semibold">Algo ha fallado</h2>

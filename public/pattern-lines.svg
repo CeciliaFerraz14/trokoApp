@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Motivos geométricos del fondo (capa 1). Se repite en mosaico: lo que
+       toca los bordes tiene periodo divisor de 240 para que empalme. -->
+  <!-- Banda superior con zigzag -->
+  <path d="M0 6H240M0 34H240"/>
+  <path d="M0 29L10 11L20 29L30 11L40 29L50 11L60 29L70 11L80 29L90 11L100 29L110 11L120 29L130 11L140 29L150 11L160 29L170 11L180 29L190 11L200 29L210 11L220 29L230 11L240 29"/>
+  <!-- Triángulos anidados -->
+  <path d="M12 110L48 48L84 110Z"/>
+  <path d="M28 110L48 76L68 110"/>
+  <path d="M40 110L48 97L56 110"/>
+  <!-- Rombo con rombo interior y punto -->
+  <path d="M195 46L227 80L195 114L163 80Z"/>
+  <path d="M195 62L211 80L195 98L179 80Z"/>
+  <circle cx="195" cy="80" r="3" fill="#000" stroke="none"/>
+  <!-- Fila de puntos -->
+  <g fill="#000" stroke="none">
+    <circle cx="10" cy="124" r="3"/><circle cx="30" cy="124" r="3"/><circle cx="50" cy="124" r="3"/>
+    <circle cx="70" cy="124" r="3"/><circle cx="90" cy="124" r="3"/><circle cx="110" cy="124" r="3"/>
+    <circle cx="130" cy="124" r="3"/><circle cx="150" cy="124" r="3"/><circle cx="170" cy="124" r="3"/>
+    <circle cx="190" cy="124" r="3"/><circle cx="210" cy="124" r="3"/><circle cx="230" cy="124" r="3"/>
+  </g>
+  <!-- Chevrones apilados -->
+  <path d="M104 142L125 158L146 142M104 160L125 176L146 160M104 178L125 194L146 178M104 196L125 212L146 196"/>
+  <!-- Arcos concéntricos -->
+  <path d="M150 234A26 26 0 0 1 202 234M160 234A16 16 0 0 1 192 234M170 234A6 6 0 0 1 182 234"/>
+</svg>

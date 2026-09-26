@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: s
     const outdated = /dynamically imported module|Importing a module script failed|ChunkLoadError/i.test(error.message)
     return (
       <div role="alert" className="flex flex-col items-center px-6 py-16 text-center">
-        <div className="mb-4 grid size-16 place-items-center rounded-full bg-danger/15 text-danger">
+        <div className="mb-4 grid size-16 place-items-center rounded-full bg-[color-mix(in_srgb,var(--danger)_15%,var(--bg))] text-danger">
           <AlertTriangle className="size-8" aria-hidden />
         </div>
         <h2 className="text-xl font-semibold">{outdated ? 'Hay una versión nueva' : 'Algo ha fallado'}</h2>

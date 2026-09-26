@@ -18,7 +18,7 @@ export function Avatar({ name, url, size = 'md', className }: Props) {
   return (
     <span
       className={cn(
-        'inline-grid shrink-0 place-items-center overflow-hidden rounded-full bg-brand-blue/20 font-display font-semibold text-accent',
+        'inline-grid shrink-0 place-items-center overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--color-brand-blue)_20%,var(--bg))] font-display font-semibold text-accent',
         sizes[size],
         className,
       )}

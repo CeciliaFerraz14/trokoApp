@@ -18,6 +18,7 @@ import { AppShell } from './AppShell'
 import { PublicOnly, RequireActive, RequireAdmin } from './guards'
 import { Splash } from './Splash'
 import { UpdatePrompt } from './UpdatePrompt'
+import { TribalPattern } from '@/components/ui/TribalPattern'
 
 // Pantallas secundarias (formularios, detalle de publicación…): se cargan al abrirlas
 const AnnouncementFormPage = lazy(() => import('@/features/announcements/AnnouncementFormPage').then((m) => ({ default: m.AnnouncementFormPage })))
@@ -40,6 +41,7 @@ export function App() {
       {/* En todas las pantallas (también login e instalar): registra el service
           worker para el modo sin conexión y avisa de versiones nuevas */}
       <UpdatePrompt />
+      <TribalPattern className="fixed inset-0" />
       <Routes>
         <Route element={<PublicOnly />}>
           <Route path="/login" element={<LoginPage />} />

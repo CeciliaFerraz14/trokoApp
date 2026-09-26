@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" stroke="#000" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Instrumentos de batucada del fondo (capa 2) -->
+  <!-- Surdo con aros y cuerdas de tensión -->
+  <ellipse cx="123" cy="56" rx="23" ry="7"/>
+  <path d="M100 56V104A23 7 0 0 0 146 104V56"/>
+  <path d="M100 66A23 7 0 0 0 146 66M100 96A23 7 0 0 0 146 96" stroke-width="2.5"/>
+  <path d="M104 72L114 92L123 72L132 92L142 72" stroke-width="2.5"/>
+  <!-- Agogô: dos campanas unidas por la varilla -->
+  <path d="M22 222L38 166H46L62 222"/>
+  <path d="M22 222A20 6 0 0 0 62 222"/>
+  <path d="M66 214L76 178H82L92 214"/>
+  <path d="M66 214A13 4 0 0 0 92 214"/>
+  <path d="M42 166C42 138 79 142 79 178"/>
+  <!-- Baquetas cruzadas -->
+  <path d="M172 146L226 212M226 146L172 212" stroke-width="4"/>
+  <circle cx="172" cy="146" r="5" fill="#000"/>
+  <circle cx="226" cy="146" r="5" fill="#000"/>
+</svg>
