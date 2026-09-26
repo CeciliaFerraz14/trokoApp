@@ -43,18 +43,16 @@ export function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
         <FormError>{error}</FormError>
-        <Button type="submit" block loading={loading} disabled={!email || !password}>
+        <Button type="submit" block loading={loading} disabled={!email || !password} className="min-h-14 text-lg">
           Entrar
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-white/70">
-        ¿Primera vez por aquí?{' '}
-        <Link to="/registro" className="inline-block min-h-11 py-2.5 font-bold text-brand-blue">
-          Crea tu cuenta
-        </Link>
-      </p>
-      <p className="text-center text-sm text-white/50">
+      <p className="mt-8 mb-2 text-center text-white/70">¿Primera vez por aquí?</p>
+      <Link to="/registro" className="flex min-h-14 items-center justify-center rounded-full border-2 border-brand-blue font-display text-lg font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10">
+        Crear cuenta
+      </Link>
+      <p className="mt-6 text-center text-sm text-white/60">
         ¿Has olvidado la contraseña? Pide a la organización que te la restablezca.
       </p>
       <p className="mt-4 text-center">

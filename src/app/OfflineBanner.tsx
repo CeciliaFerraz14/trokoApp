@@ -8,7 +8,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4"
+      className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4"
     >
       <span className="flex items-center gap-2 rounded-full bg-warning px-4 py-2 text-sm font-bold text-black shadow-lg">
         <WifiOff className="size-4" /> Sin conexión · viendo lo último guardado

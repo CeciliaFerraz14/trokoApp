@@ -1,13 +1,15 @@
 import { useSearchParams, useParams } from 'react-router'
-import { UsersRound } from 'lucide-react'
+import { startOfToday } from 'date-fns'
+import { UserPlus, UsersRound } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { Badge, GroupDot } from '@/components/ui/Badge'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList, Spinner } from '@/components/ui/States'
 import { Tabs } from '@/components/ui/Tabs'
 import { Gallery } from '@/features/wall/Gallery'
 import { WallFeed } from '@/features/wall/WallFeed'
-import { useWallRealtime } from '@/features/wall/api'
+import { useGallery, useWallRealtime } from '@/features/wall/api'
+import { useEvents } from '@/features/calendar/api'
 import { useMe } from '@/features/auth/useMe'
 import { InviteCodeCard } from './InviteCodeCard'
 import { displayName, useGroup, useGroupMembers } from './api'
@@ -22,6 +24,10 @@ export function GroupPage() {
   const { data: me } = useMe()
   // Nuevas publicaciones, comentarios y reacciones aparecen solos
   useWallRealtime(groupId)
+  // Cifras de la cabecera (mismas consultas que las pestañas y el calendario)
+  const members = useGroupMembers(groupId)
+  const gallery = useGallery(groupId)
+  const events = useEvents(startOfToday())
 
   if (group.isPending) return <><PageHeader title="Grupo" back /><Spinner /></>
   if (group.isError) return <><PageHeader title="Grupo" back /><ErrorState error={group.error} onRetry={() => group.refetch()} /></>
@@ -29,8 +35,33 @@ export function GroupPage() {
   const g = group.data
   return (
     <>
-      <PageHeader title={g.name} subtitle={g.schedule} back />
-      <div className="h-1.5" style={{ backgroundColor: g.color }} />
+      <PageHeader
+        title={g.name}
+        subtitle={
+          <span className="flex items-center gap-1.5">
+            <GroupDot color={g.color} className="ring-2 ring-brand-black/20" />
+            {g.schedule || 'Grupo'}
+          </span>
+        }
+        back
+        actions={
+          me?.canManageGroup(g.id) && (
+            <HeaderLink to={`/muro/${g.id}?tab=miembros`} label="Invitar al grupo">
+              <UserPlus className="size-5" />
+            </HeaderLink>
+          )
+        }
+      >
+        <div className="grid grid-cols-3 gap-2">
+          <Stat value={members.data?.length} label="personas" />
+          <Stat value={gallery.data?.length} label="fotos" />
+          {/* Los generales (toda la batucada) también son del grupo */}
+          <Stat
+            value={events.data?.filter((e) => !e.cancelled && (e.group_ids.length === 0 || e.group_ids.includes(g.id))).length}
+            label="próximos"
+          />
+        </div>
+      </PageHeader>
       <Page className="space-y-4">
         {g.description && <p className="text-muted">{g.description}</p>}
         <Tabs<Tab>
@@ -87,5 +118,15 @@ function MembersList({ groupId }: { groupId: string }) {
         ))}
       </ul>
     </>
+  )
+}
+
+/** Cifra de la cabecera del grupo: bloque negro sobre el azul */
+function Stat({ value, label }: { value: number | undefined; label: string }) {
+  return (
+    <div className="rounded-2xl bg-brand-black py-2.5 text-center text-white">
+      <p className="font-display text-2xl leading-tight font-semibold">{value ?? '–'}</p>
+      <p className="text-xs text-white/70">{label}</p>
+    </div>
   )
 }

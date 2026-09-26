@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import { Pin, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { formatWhen } from '@/lib/dates'
+import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { displayName } from '@/features/groups/api'
 import { Audience } from '@/features/groups/audience'
@@ -22,9 +23,8 @@ export function AnnouncementCard({
     <Link
       to={`/avisos/${item.id}`}
       className={cn(
-        'block rounded-2xl border bg-surface p-4 transition-colors hover:border-brand-blue',
-        item.important ? 'border-warning/60 shadow-[inset_4px_0_0_var(--warning)]' : 'border-line',
-        highlight && !item.important && 'border-brand-blue/60',
+        'block rounded-[1.4rem] border bg-surface p-4 transition-colors hover:border-brand-blue',
+        item.important ? 'border-warning/60 shadow-[inset_4px_0_0_var(--warning)]' : highlight ? 'border-brand-blue/60' : 'border-(--card-border)',
       )}
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
@@ -45,7 +45,12 @@ export function AnnouncementCard({
       {item.body && <p className="mt-1 line-clamp-3 break-words whitespace-pre-line text-muted">{item.body}</p>}
       <div className="mt-3 flex items-center gap-2 text-sm text-muted">
         <Audience groupIds={item.group_ids} groups={groups} className="min-w-0 flex-1" />
-        {item.author && <span className="shrink-0 truncate">{displayName(item.author)}</span>}
+        {item.author && (
+          <span className="flex shrink-0 items-center gap-1.5 truncate">
+            <Avatar name={item.author.full_name} url={item.author.avatar_url} size="sm" className="size-6 text-[0.65rem]" />
+            {displayName(item.author)}
+          </span>
+        )}
       </div>
     </Link>
   )

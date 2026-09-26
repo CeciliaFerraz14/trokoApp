@@ -62,7 +62,7 @@ export function PeopleTab() {
             onClick={() => setFilter(f.value)}
             className={cn(
               'min-h-9 shrink-0 rounded-full border px-3.5 text-sm font-bold',
-              filter === f.value ? 'border-brand-blue bg-brand-blue text-brand-black' : 'border-line text-muted',
+              filter === f.value ? 'border-transparent bg-fg text-bg' : 'border-line bg-bg text-muted',
             )}
           >
             {f.label}

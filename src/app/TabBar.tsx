@@ -31,33 +31,34 @@ export function TabBar({
   if (isAdmin) tabs.push({ to: '/admin', label: 'Admin', icon: ShieldCheck, badge: pendingCount })
 
   return (
+    // Píldora azul flotante; la sección activa es una cápsula negra con su nombre
     <nav
       aria-label="Navegación principal"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-chrome/95 pb-safe backdrop-blur"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
     >
-      <ul className="mx-auto flex max-w-lg">
+      <ul className="pointer-events-auto mx-auto flex h-16 max-w-lg items-center justify-around rounded-full bg-brand-blue px-2 shadow-xl shadow-black/40">
         {tabs.map(({ to, label, icon: Icon, badge }) => (
-          <li key={to} className="flex-1">
+          <li key={to}>
             <NavLink
               to={to}
+              aria-label={label}
+              title={label}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-16 flex-col items-center justify-center gap-0.5 font-display text-[0.7rem] font-semibold tracking-wide transition-colors',
-                  isActive ? 'text-brand-blue' : 'text-white/55 hover:text-white',
+                  'relative flex h-12 items-center justify-center gap-2 rounded-full font-display text-sm font-semibold transition-colors',
+                  isActive ? 'bg-brand-black px-4 text-brand-blue' : 'w-12 text-brand-black hover:bg-black/10',
                 )
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={cn('relative grid h-8 w-14 place-items-center rounded-full', isActive && 'bg-brand-blue/15')}>
-                    <Icon className="size-6" strokeWidth={isActive ? 2.4 : 2} aria-hidden />
-                    {!!badge && (
-                      <span className="absolute -top-1 right-1 min-w-5 rounded-full bg-brand-blue px-1 text-center text-[0.7rem] leading-5 font-bold text-brand-black">
-                        {badge > 99 ? '99+' : badge}
-                      </span>
-                    )}
-                  </span>
-                  {label}
+                  <Icon className="size-6" strokeWidth={isActive ? 2.4 : 2} aria-hidden />
+                  {isActive && <span aria-hidden>{label}</span>}
+                  {!!badge && (
+                    <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-brand-black px-1 text-center text-[0.7rem] leading-5 font-bold text-white ring-2 ring-brand-blue">
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>

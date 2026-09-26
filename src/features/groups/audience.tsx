@@ -189,7 +189,7 @@ export function GroupFilter({
       onClick={() => onChange(key)}
       className={cn(
         'inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-bold transition-colors',
-        value === key ? 'border-transparent bg-brand-blue text-brand-black' : 'border-line bg-surface-2 text-fg',
+        value === key ? 'border-transparent bg-fg text-bg' : 'border-line bg-bg text-fg',
       )}
     >
       {color && <span className="size-2.5 rounded-full" style={{ backgroundColor: color }} />}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Megaphone, Plus } from 'lucide-react'
 import { SectionTitle } from '@/components/ui/Card'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { InstallBanner } from '@/features/install/InstallBanner'
 import { NextEvent } from '@/features/calendar/NextEvent'
@@ -14,6 +14,12 @@ import { useAnnouncements, useMarkRead, type AnnouncementItem } from './api'
 export function AnnouncementsPage() {
   const { data: me } = useMe()
   const name = me?.profile.nickname || me?.profile.full_name.split(' ')[0]
+  const initials = (me?.profile.full_name ?? '?')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('')
   const list = useAnnouncements()
   const markRead = useMarkRead()
   const [params, setParams] = useSearchParams()
@@ -46,24 +52,30 @@ export function AnnouncementsPage() {
   return (
     <>
       <PageHeader
-        title="Avisos"
-        subtitle={name ? `¡Hola, ${name}!` : undefined}
+        title={name ?? 'Avisos'}
+        subtitle={greeting()}
+        leading={
+          <Link
+            to="/perfil"
+            aria-label="Mi perfil"
+            className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-black font-display text-lg font-semibold text-brand-blue"
+          >
+            {me?.profile.avatar_url ? <img src={me.profile.avatar_url} alt="" className="size-full object-cover" /> : initials}
+          </Link>
+        }
         actions={
           canPublish(me) && (
-            <Link
-              to="/avisos/nuevo"
-              aria-label="Nuevo aviso"
-              title="Nuevo aviso"
-              className="grid size-11 place-items-center rounded-full bg-brand-blue text-brand-black hover:bg-brand-blue-light"
-            >
+            <HeaderLink to="/avisos/nuevo" label="Nuevo aviso">
               <Plus className="size-6" />
-            </Link>
+            </HeaderLink>
           )
         }
-      />
+      >
+        <NextEvent />
+      </PageHeader>
       <InstallBanner />
       <Page className="space-y-4">
-        <NextEvent />
+        <h2 className="px-1 font-display text-2xl font-semibold">Avisos</h2>
         {list.isPending ? (
           <SkeletonList count={4} className="h-32" />
         ) : list.isError ? (
@@ -102,4 +114,9 @@ export function AnnouncementsPage() {
       </Page>
     </>
   )
+}
+
+function greeting(now = new Date()) {
+  const h = now.getHours()
+  return h >= 6 && h < 14 ? 'Buenos días' : h >= 14 && h < 21 ? 'Buenas tardes' : 'Buenas noches'
 }

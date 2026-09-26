@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { format, startOfDay, startOfMonth, startOfToday } from 'date-fns'
 import { CalendarDays, CalendarSync, Plus } from 'lucide-react'
 import { formatDayHeading } from '@/lib/dates'
 import { SectionTitle } from '@/components/ui/Card'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { Tabs } from '@/components/ui/Tabs'
 import { useMe } from '@/features/auth/useMe'
@@ -40,23 +40,16 @@ export function CalendarPage() {
         title="Calendario"
         actions={
           <>
-            <Link
-              to="/calendario/suscribirse"
-              aria-label="Añadir a mi calendario del móvil"
-              title="Añadir a mi calendario del móvil"
-              className="grid size-11 place-items-center rounded-full hover:bg-white/10"
-            >
+            <HeaderLink to="/calendario/suscribirse" label="Añadir a mi calendario del móvil">
               <CalendarSync className="size-5" />
-            </Link>
+            </HeaderLink>
             {canPublish(me) && (
-              <Link
+              <HeaderLink
                 to={`/calendario/nuevo${view === 'mes' && params.get('dia') ? `?dia=${params.get('dia')}` : ''}`}
-                aria-label="Nuevo evento"
-                title="Nuevo evento"
-                className="grid size-11 place-items-center rounded-full bg-brand-blue text-brand-black hover:bg-brand-blue-light"
+                label="Nuevo evento"
               >
                 <Plus className="size-6" />
-              </Link>
+              </HeaderLink>
             )}
           </>
         }

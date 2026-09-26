@@ -93,16 +93,14 @@ export function RegisterPage() {
           className="[&_input]:font-mono [&_input]:tracking-widest [&_input]:uppercase"
         />
         <FormError>{error}</FormError>
-        <Button type="submit" block loading={loading} disabled={!form.email || !form.password || !form.name}>
+        <Button type="submit" block loading={loading} disabled={!form.email || !form.password || !form.name} className="min-h-14 text-lg">
           Crear cuenta
         </Button>
       </form>
-      <p className="mt-8 text-center text-white/70">
-        ¿Ya tienes cuenta?{' '}
-        <Link to="/login" className="inline-block min-h-11 py-2.5 font-bold text-brand-blue">
-          Inicia sesión
-        </Link>
-      </p>
+      <p className="mt-8 mb-2 text-center text-white/70">¿Ya tienes cuenta?</p>
+      <Link to="/login" className="flex min-h-14 items-center justify-center rounded-full border-2 border-brand-blue font-display text-lg font-semibold text-brand-blue transition-colors hover:bg-brand-blue/10">
+        Entrar
+      </Link>
     </AuthLayout>
   )
 }

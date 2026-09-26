@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Eye, Megaphone, Pencil, Pin, PinOff, Trash2, TriangleAlert } from 'lucide-react'
 import { errorMessage } from '@/lib/errors'
 import { formatFull } from '@/lib/dates'
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Linkify } from '@/components/ui/Linkify'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
@@ -72,9 +72,9 @@ export function AnnouncementDetailPage() {
         back="/avisos"
         actions={
           canEdit && (
-            <Link to={`/avisos/${a.id}/editar`} aria-label="Editar aviso" title="Editar aviso" className="grid size-11 place-items-center rounded-full hover:bg-white/10">
+            <HeaderLink to={`/avisos/${a.id}/editar`} label="Editar aviso">
               <Pencil className="size-5" />
-            </Link>
+            </HeaderLink>
           )
         }
       />

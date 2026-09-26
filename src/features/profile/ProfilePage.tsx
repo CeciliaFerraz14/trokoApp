@@ -6,7 +6,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Badge, GroupDot } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, SectionTitle } from '@/components/ui/Card'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/States'
 import { signOut } from '@/features/auth/AuthProvider'
 import { useMe } from '@/features/auth/useMe'
@@ -25,9 +25,9 @@ export function ProfilePage() {
       <PageHeader
         title="Perfil"
         actions={
-          <Link to="/perfil/editar" aria-label="Editar perfil" className="grid size-11 place-items-center rounded-full hover:bg-white/10">
+          <HeaderLink to="/perfil/editar" label="Editar perfil">
             <Pencil className="size-5" />
-          </Link>
+          </HeaderLink>
         }
       />
       <Page className="space-y-6">

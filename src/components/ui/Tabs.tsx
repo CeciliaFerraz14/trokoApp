@@ -6,10 +6,10 @@ interface Props<T extends string> {
   options: { value: T; label: string; count?: number }[]
 }
 
-/** Selector segmentado (pestañas dentro de una página) */
+/** Pestañas dentro de una página: píldoras separadas, la elegida en blanco (negro en tema claro) */
 export function Tabs<T extends string>({ value, onChange, options }: Props<T>) {
   return (
-    <div role="tablist" className="flex gap-1 rounded-full bg-surface-2 p-1">
+    <div role="tablist" className="flex gap-2">
       {options.map((o) => (
         <button
           key={o.value}
@@ -18,16 +18,12 @@ export function Tabs<T extends string>({ value, onChange, options }: Props<T>) {
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-full px-3 font-display text-sm font-semibold transition-colors',
-            value === o.value ? 'bg-brand-blue text-brand-black' : 'text-muted hover:text-fg',
+            'flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border px-3 font-display text-sm font-semibold transition-colors',
+            value === o.value ? 'border-transparent bg-fg text-bg' : 'border-line bg-bg text-fg hover:border-brand-blue',
           )}
         >
           {o.label}
-          {!!o.count && (
-            <span className={cn('rounded-full px-1.5 text-xs', value === o.value ? 'bg-black/20' : 'bg-brand-blue text-brand-black')}>
-              {o.count}
-            </span>
-          )}
+          {!!o.count && <span className="rounded-full bg-brand-blue px-1.5 text-xs text-brand-black">{o.count}</span>}
         </button>
       ))}
     </div>

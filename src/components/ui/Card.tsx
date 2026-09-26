@@ -2,7 +2,7 @@ import type { HTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
 
 export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('rounded-2xl border border-line bg-surface p-4', className)} {...rest} />
+  return <div className={cn('rounded-[1.4rem] border border-(--card-border) bg-surface p-4', className)} {...rest} />
 }
 
 export function SectionTitle({ className, ...rest }: HTMLAttributes<HTMLHeadingElement>) {

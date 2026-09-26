@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Ban, CalendarDays, CalendarPlus, MapPin, Pencil, Repeat, RotateCcw, StickyNote, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, SectionTitle } from '@/components/ui/Card'
 import { TextArea } from '@/components/ui/Field'
 import { Linkify } from '@/components/ui/Linkify'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
@@ -89,13 +89,12 @@ export function EventDetailPage() {
         back="/calendario"
         actions={
           canManage && (
-            <Link to={`/calendario/${e.id}/editar`} aria-label="Editar evento" title="Editar evento" className="grid size-11 place-items-center rounded-full hover:bg-white/10">
+            <HeaderLink to={`/calendario/${e.id}/editar`} label="Editar evento">
               <Pencil className="size-5" />
-            </Link>
+            </HeaderLink>
           )
         }
       />
-      <div className="h-1.5" style={{ backgroundColor: cat.color }} />
       <Page className="space-y-5">
         <article className="space-y-4">
           {e.cancelled && (

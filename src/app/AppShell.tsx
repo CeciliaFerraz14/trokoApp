@@ -20,7 +20,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh flex-col">
       {/* Espacio inferior = altura de la barra + safe area */}
-      <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)]">
+      <main className="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <ErrorBoundary resetKey={pathname}>
           <Suspense fallback={<Spinner />}>
             <Outlet />

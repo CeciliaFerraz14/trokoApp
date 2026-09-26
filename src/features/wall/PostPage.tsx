@@ -8,7 +8,7 @@ import { Button, IconButton } from '@/components/ui/Button'
 import { SectionTitle } from '@/components/ui/Card'
 import { FormError, TextArea, TextField } from '@/components/ui/Field'
 import { Linkify } from '@/components/ui/Linkify'
-import { Page, PageHeader } from '@/components/ui/PageHeader'
+import { HeaderButton, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
@@ -64,14 +64,14 @@ export function PostPage() {
         actions={
           <>
             {isAuthor && !editing && (
-              <IconButton label="Editar publicación" className="text-white" onClick={() => setEditing(true)}>
+              <HeaderButton label="Editar publicación" onClick={() => setEditing(true)}>
                 <Pencil className="size-5" />
-              </IconButton>
+              </HeaderButton>
             )}
             {(isAuthor || canModerate) && (
-              <IconButton label="Borrar publicación" className="text-white" onClick={onDelete} disabled={remove.isPending}>
+              <HeaderButton label="Borrar publicación" onClick={onDelete} disabled={remove.isPending}>
                 <Trash2 className="size-5" />
-              </IconButton>
+              </HeaderButton>
             )}
           </>
         }
