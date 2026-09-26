@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Troko Bloco</title>
+    <meta name="description" content="La app de la batucada y la escuela Troko Bloco" />
+    <meta name="theme-color" content="#000000" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/pwa-64x64.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+
+    <!-- iPhone: que se abra como app a pantalla completa -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Troko" />
+
+    <!-- Aplica el tema guardado antes de pintar para evitar parpadeo -->
+    <script>
+      try {
+        var t = localStorage.getItem('troko-theme')
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

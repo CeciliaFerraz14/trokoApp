@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/fredoka';
+@import '@fontsource-variable/nunito';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* -------------------------------------------------------------------------
+ * Tokens de marca Troko Bloco: cámbialos aquí y se aplican en toda la app.
+ * Clases resultantes: bg-brand-black, text-brand-blue, border-brand-blue…
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-brand-black: #000000;
+  --color-brand-blue: #6cb8e6;
+  --color-brand-blue-light: #a5d4f1;
+  --color-brand-blue-dark: #2f86bb;
+
+  --font-display: 'Fredoka Variable', ui-rounded, system-ui, sans-serif;
+  --font-sans: 'Nunito Variable', ui-rounded, system-ui, sans-serif;
+}
+
+/* Tokens semánticos que cambian con el tema (bg-bg, bg-surface, text-fg, text-muted…) */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-chrome: var(--chrome);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+}
+
+/* Oscuro (por defecto) */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #121214;
+  --surface-2: #1d1d21;
+  --line: #2c2c31;
+  --fg: #f4f4f5;
+  --muted: #a1a1aa;
+  --accent: #6cb8e6; /* azul de marca para texto/iconos: 9.6:1 sobre negro */
+  --chrome: #000000; /* cabecera y barra de navegación */
+  --danger: #ff7a7a;
+  --success: #5ee38f;
+  --warning: #fbc02d;
+}
+
+/* Claro (opcional) */
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eaeef2;
+  --line: #d9dfe5;
+  --fg: #0b0b0c;
+  --muted: #5a6470;
+  --accent: #1c6e9f; /* azul de marca oscurecido: el celeste no contrasta sobre blanco */
+  --chrome: #000000;
+  --danger: #c62828;
+  --success: #1b7f3b;
+  --warning: #a86400;
+}
+
+/* Safe areas del notch y la barra de inicio */
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility px-safe {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+@layer base {
+  html {
+    background: var(--bg);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+  button,
+  a {
+    -webkit-touch-callout: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-blue);
+    outline-offset: 2px;
+  }
+}
