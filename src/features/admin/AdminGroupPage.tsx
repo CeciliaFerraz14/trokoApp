@@ -9,7 +9,7 @@ import { FormError, TextArea, TextField } from '@/components/ui/Field'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
-import { useGroup } from '@/features/groups/api'
+import { useGroup, useGroups } from '@/features/groups/api'
 import { InviteCodeCard } from '@/features/groups/InviteCodeCard'
 import { useSaveGroup, type GroupInput } from './api'
 
@@ -19,6 +19,8 @@ export function AdminGroupPage() {
   const { id } = useParams()
   const isNew = !id
   const group = useGroup(id)
+  const allGroups = useGroups({ includeArchived: true })
+  const nextSortOrder = Math.max(0, ...(allGroups.data ?? []).map((g) => g.sort_order)) + 10
   const save = useSaveGroup()
   const navigate = useNavigate()
   const toast = useToast()
@@ -48,7 +50,8 @@ export function AdminGroupPage() {
         description: form.description?.trim() || null,
         schedule: form.schedule?.trim() || null,
         color: form.color,
-        sort_order: Number(form.sort_order) || 0,
+        // El orden se cambia con las flechas de Admin → Grupos; uno nuevo va al final
+        ...(isNew ? { sort_order: nextSortOrder } : {}),
       },
       {
         onSuccess: (g) => {
@@ -104,14 +107,6 @@ export function AdminGroupPage() {
               ))}
             </div>
           </div>
-          <TextField
-            label="Orden"
-            type="number"
-            inputMode="numeric"
-            hint="Los grupos se ordenan de menor a mayor (p. ej. por nivel)."
-            value={form.sort_order}
-            onChange={(e) => set('sort_order', Number(e.target.value))}
-          />
           <FormError>{error}</FormError>
           <Button type="submit" block loading={save.isPending}>
             {isNew ? 'Crear grupo' : 'Guardar cambios'}

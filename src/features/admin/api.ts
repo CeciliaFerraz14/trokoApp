@@ -254,3 +254,33 @@ export function useResolveJoinRequest() {
     },
   })
 }
+
+/**
+ * Guarda el orden de los grupos tal como queda en la lista (10, 20, 30…).
+ * Solo escribe los que cambian y actualiza la lista al momento.
+ */
+export function useReorderGroups() {
+  const qc = useQueryClient()
+  const target = (ordered: Group[]) => ordered.map((g, i) => ({ id: g.id, sort_order: (i + 1) * 10 }))
+  return useMutation({
+    mutationFn: async (ordered: Group[]) => {
+      const changes = target(ordered).filter((t, i) => ordered[i].sort_order !== t.sort_order)
+      const results = await Promise.all(changes.map((c) => supabase.from('groups').update({ sort_order: c.sort_order }).eq('id', c.id)))
+      const failed = results.find((r) => r.error)
+      if (failed?.error) throw failed.error
+    },
+    onMutate: async (ordered) => {
+      await qc.cancelQueries({ queryKey: ['groups'] })
+      const order = new Map(target(ordered).map((t) => [t.id, t.sort_order]))
+      qc.setQueriesData<Group[]>({ queryKey: ['groups'] }, (list) =>
+        list
+          ?.map((g) => (order.has(g.id) ? { ...g, sort_order: order.get(g.id)! } : g))
+          .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name, 'es')),
+      )
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: ['groups'] })
+      void qc.invalidateQueries({ queryKey: ['me'] })
+    },
+  })
+}
