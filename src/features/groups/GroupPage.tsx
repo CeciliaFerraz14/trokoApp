@@ -74,7 +74,7 @@ export function GroupPage() {
           ]}
         />
         {tab === 'muro' ? (
-          <WallFeed groupId={g.id} />
+          <WallFeed groupId={g.id} groupName={g.name} />
         ) : tab === 'galeria' ? (
           <Gallery groupId={g.id} />
         ) : (

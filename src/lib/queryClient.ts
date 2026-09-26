@@ -31,6 +31,13 @@ export const persister = createAsyncStoragePersister({
 
 export const PERSIST_MAX_AGE = WEEK
 
+/**
+ * Versión de la copia guardada: al cambiarla, la app descarta la copia vieja al
+ * actualizarse. Subirla cuando cambie la forma de algún dato guardado.
+ * v2: los emails de admin y las solicitudes de grupo se guardaban como Map (se perdían).
+ */
+export const PERSIST_BUSTER = 'v2'
+
 /** Al cerrar sesión: borrar todo lo guardado para que no lo vea otra persona */
 export async function clearCachedData() {
   queryClient.clear()

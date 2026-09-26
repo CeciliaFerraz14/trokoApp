@@ -37,6 +37,8 @@ export function useAllUsers() {
   })
 }
 
+const toEmailMap = (rows: { id: string; email: string }[]) => new Map(Array.isArray(rows) ? rows.map((r) => [r.id, r.email]) : [])
+
 /** Emails de todas las cuentas (solo admin) como mapa id → email */
 export function useUserEmails() {
   return useQuery({
@@ -44,8 +46,10 @@ export function useUserEmails() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc('admin_user_emails')
       if (error) throw error
-      return new Map((data ?? []).map((r) => [r.id, r.email]))
+      return data ?? []
     },
+    // El Map se crea al leer: la caché se guarda en IndexedDB como JSON y un Map se perdería
+    select: toEmailMap,
     staleTime: 5 * 60_000,
   })
 }
@@ -83,7 +87,8 @@ export function useApproveUser() {
       const { error } = await supabase.rpc('approve_user', { p_user: userId, p_groups: groupIds })
       if (error) throw error
     },
-    onSuccess: invalidate,
+    // Sin esperar: la tarjeta de la cuenta desaparece al refrescar y su aviso no llegaría a verse
+    onSuccess: () => void invalidate(),
   })
 }
 
@@ -202,4 +207,50 @@ export async function deleteAccount(userId: string) {
 export function useDeleteAccount() {
   const invalidate = useInvalidateAdmin()
   return useMutation({ mutationFn: deleteAccount, onSuccess: invalidate })
+}
+
+// ---------------------------------------------------------------------------
+// Solicitudes para entrar en grupos (las resuelve un admin)
+// ---------------------------------------------------------------------------
+
+export interface JoinRequestRow {
+  group_id: string
+  user_id: string
+  created_at: string
+  profile: Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'> | null
+  group: Pick<Group, 'id' | 'name' | 'color'> | null
+}
+
+export function useJoinRequests({ enabled = true } = {}) {
+  return useQuery({
+    queryKey: ['join-requests', 'pending'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('group_join_requests')
+        .select('group_id, user_id, created_at, profile:profiles(id, full_name, nickname, avatar_url), group:groups(id, name, color)')
+        .eq('status', 'pending')
+        .order('created_at')
+      if (error) throw error
+      return (data ?? []) as unknown as JoinRequestRow[]
+    },
+    enabled,
+    refetchInterval: enabled ? 60_000 : false,
+  })
+}
+
+export function useResolveJoinRequest() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ groupId, userId, accept }: { groupId: string; userId: string; accept: boolean }) => {
+      const { error } = await supabase.rpc('resolve_group_request', { p_group: groupId, p_user: userId, p_accept: accept })
+      if (error) throw error
+    },
+    // Sin esperar al refresco: si no, la tarjeta desaparece de la lista antes de
+    // que corra el onSuccess de quien llama (y su aviso "Aceptada" no se ve)
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['join-requests'] })
+      void qc.invalidateQueries({ queryKey: ['admin'] })
+      void qc.invalidateQueries({ queryKey: ['group-members'] })
+    },
+  })
 }

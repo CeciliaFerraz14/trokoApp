@@ -5,37 +5,104 @@ import { Check, PartyPopper, X } from 'lucide-react'
 import { errorMessage } from '@/lib/errors'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
+import { Card, SectionTitle } from '@/components/ui/Card'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
-import { useGroups } from '@/features/groups/api'
+import { displayName, useGroups } from '@/features/groups/api'
+import { GroupDot } from '@/components/ui/Badge'
 import type { Group, Profile } from '@/types/database'
 import { GroupPicker } from './GroupPicker'
-import { useApproveUser, usePendingUsers, useUpdateUserAccount, useUserEmails } from './api'
+import { useApproveUser, useJoinRequests, usePendingUsers, useResolveJoinRequest, useUpdateUserAccount, useUserEmails, type JoinRequestRow } from './api'
 
 export function PendingTab() {
   const pending = usePendingUsers()
+  const requests = useJoinRequests()
   const groups = useGroups()
   const emails = useUserEmails()
 
-  if (pending.isPending || groups.isPending) return <SkeletonList count={3} className="h-40" />
+  if (pending.isPending || groups.isPending || requests.isPending) return <SkeletonList count={3} className="h-40" />
   if (pending.isError) return <ErrorState error={pending.error} onRetry={() => pending.refetch()} />
+  if (requests.isError) return <ErrorState error={requests.error} onRetry={() => requests.refetch()} />
   if (groups.isError) return <ErrorState error={groups.error} onRetry={() => groups.refetch()} />
 
-  if (!pending.data.length) {
+  if (!pending.data.length && !requests.data.length) {
     return (
       <EmptyState icon={<PartyPopper className="size-8" />} title="Todo al día">
-        No hay cuentas esperando aprobación.
+        No hay cuentas ni solicitudes esperando.
       </EmptyState>
     )
   }
 
   return (
-    <div className="space-y-3">
-      {pending.data.map((p) => (
-        <PendingCard key={p.id} profile={p} email={emails.data?.get(p.id)} groups={groups.data} />
-      ))}
+    <div className="space-y-6">
+      {requests.data.length > 0 && (
+        <section>
+          <SectionTitle>Quieren entrar en un grupo</SectionTitle>
+          <ul className="space-y-3">
+            {requests.data.map((r) => (
+              <JoinRequestCard key={`${r.group_id}:${r.user_id}`} request={r} />
+            ))}
+          </ul>
+        </section>
+      )}
+      {pending.data.length > 0 && (
+        <section>
+          <SectionTitle>Cuentas nuevas</SectionTitle>
+          <div className="space-y-3">
+            {pending.data.map((p) => (
+              <PendingCard key={p.id} profile={p} email={emails.data?.get(p.id)} groups={groups.data} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
+  )
+}
+
+function JoinRequestCard({ request }: { request: JoinRequestRow }) {
+  const resolve = useResolveJoinRequest()
+  const toast = useToast()
+  const name = request.profile ? displayName(request.profile) : 'Alguien'
+  const group = request.group?.name ?? 'un grupo'
+  const decide = (accept: boolean) =>
+    resolve.mutate(
+      { groupId: request.group_id, userId: request.user_id, accept },
+      {
+        onSuccess: () => toast(accept ? `${name} ya está en ${group}` : 'Solicitud rechazada'),
+        onError: (e) => toast(errorMessage(e), 'error'),
+      },
+    )
+
+  return (
+    <li className="flex flex-col gap-3 rounded-[1.4rem] border border-(--card-border) bg-surface p-4">
+      <div className="flex items-center gap-3">
+        <Avatar name={request.profile?.full_name} url={request.profile?.avatar_url} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{name}</p>
+          <p className="flex items-center gap-1.5 text-sm text-muted">
+            quiere entrar en
+            {request.group && <GroupDot color={request.group.color} className="size-2.5" />}
+            <strong className="text-fg">{group}</strong>
+          </p>
+          <p className="text-xs text-muted">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true, locale: es })}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button className="flex-1" icon={<Check className="size-4" />} loading={resolve.isPending && resolve.variables?.accept} disabled={resolve.isPending} onClick={() => decide(true)}>
+          Aceptar
+        </Button>
+        <Button
+          variant="secondary"
+          className="flex-1"
+          icon={<X className="size-4" />}
+          loading={resolve.isPending && resolve.variables?.accept === false}
+          disabled={resolve.isPending}
+          onClick={() => decide(false)}
+        >
+          Rechazar
+        </Button>
+      </div>
+    </li>
   )
 }
 

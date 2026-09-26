@@ -1,7 +1,8 @@
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { Tabs } from '@/components/ui/Tabs'
-import { usePendingUsers } from './api'
+import { useJoinRequests, usePendingUsers } from './api'
 import { PendingTab } from './PendingTab'
 import { PeopleTab } from './PeopleTab'
 import { GroupsTab } from './GroupsTab'
@@ -12,7 +13,16 @@ type Tab = 'resumen' | 'pendientes' | 'personas' | 'grupos'
 export function AdminPage() {
   const [params, setParams] = useSearchParams()
   const pending = usePendingUsers()
-  const tab = (params.get('tab') as Tab) || (pending.data?.length ? 'pendientes' : 'resumen')
+  const requests = useJoinRequests()
+  const pendingCount = (pending.data?.length ?? 0) + (requests.data?.length ?? 0)
+  const tab = (params.get('tab') as Tab) || (pendingCount ? 'pendientes' : 'resumen')
+
+  // Fijar la pestaña elegida al abrir: si no, al resolver lo último pendiente
+  // la página saltaría sola a Resumen en vez de mostrar "Todo al día"
+  const loaded = !pending.isPending && !requests.isPending
+  useEffect(() => {
+    if (loaded && !params.get('tab')) setParams({ tab }, { replace: true })
+  }, [loaded, params, setParams, tab])
 
   return (
     <>
@@ -23,7 +33,7 @@ export function AdminPage() {
           onChange={(t) => setParams({ tab: t }, { replace: true })}
           options={[
             { value: 'resumen', label: 'Resumen' },
-            { value: 'pendientes', label: 'Pendientes', count: pending.data?.length },
+            { value: 'pendientes', label: 'Pendientes', count: pendingCount },
             { value: 'personas', label: 'Personas' },
             { value: 'grupos', label: 'Grupos' },
           ]}

@@ -142,6 +142,16 @@ export type PostReaction = {
   created_at: string
 }
 
+export type JoinRequestStatus = 'pending' | 'rejected'
+
+export type GroupJoinRequest = {
+  group_id: string
+  user_id: string
+  status: JoinRequestStatus
+  created_at: string
+  resolved_at: string | null
+}
+
 /** Resumen del panel de admin (función admin_stats) */
 export type AdminStats = {
   people: { active: number; pending: number; rejected: number; admins: number }
@@ -268,6 +278,15 @@ export type Database = {
           Rel<'post_reactions_group_id_fkey', 'group_id', 'groups'>,
         ]
       }
+      group_join_requests: {
+        Row: GroupJoinRequest
+        Insert: never
+        Update: never
+        Relationships: [
+          Rel<'group_join_requests_group_id_fkey', 'group_id', 'groups'>,
+          Rel<'group_join_requests_user_id_fkey', 'user_id', 'profiles'>,
+        ]
+      }
     }
     Views: { [_ in never]: never }
     Functions: {
@@ -283,6 +302,8 @@ export type Database = {
       admin_reset_password: { Args: { p_user: string; p_password: string }; Returns: undefined }
       account_files: { Args: { p_user: string }; Returns: string[] }
       delete_account: { Args: { p_user: string }; Returns: undefined }
+      request_group_access: { Args: { p_group: string }; Returns: undefined }
+      resolve_group_request: { Args: { p_group: string; p_user: string; p_accept: boolean }; Returns: undefined }
     }
     Enums: {
       app_role: AppRole
@@ -290,6 +311,7 @@ export type Database = {
       group_role: GroupRole
       event_category: EventCategory
       attendance_status: AttendanceStatus
+      join_request_status: JoinRequestStatus
     }
     CompositeTypes: { [_ in never]: never }
   }

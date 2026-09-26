@@ -31,6 +31,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0006_wall.sql` | Muro de grupos: publicaciones, fotos (bucket privado), comentarios, reacciones y tiempo real |
 | `supabase/migrations/0007_admin.sql` | Resumen de admin, restablecer contraseñas y borrar cuentas |
 | `supabase/migrations/0008_instrument_names.sql` | Renombra los instrumentos guardados a Fondo 1, Fondo 2, Surdo 3, Repique, Caja y Timbau |
+| `supabase/migrations/0009_group_requests.sql` | Solicitudes para entrar en grupos (las acepta o rechaza un admin) |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -99,6 +100,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Contraseña olvidada**: mientras no haya un servidor de correo configurado, un admin la restablece en *Admin → Personas → persona → Restablecer contraseña*: la app genera una contraseña temporal (p. ej. `surdo-caixa-4821`) y un mensaje para copiar y enviar. Después la persona puede cambiarla en *Perfil → Cambiar contraseña*. (`supabase/reset_password.sql` sigue sirviendo si hiciera falta hacerlo desde Supabase.)
 - **Borrar una cuenta**: cada persona puede borrar la suya en *Perfil → Borrar mi cuenta*, y un admin cualquiera desde su ficha. Se borran el perfil, sus publicaciones, fotos y comentarios del muro, su asistencia y sus notas; los avisos y eventos que creó se mantienen. La última cuenta admin no se puede borrar.
 - **Resumen** (*Admin → Resumen*): personas, contenido y cuánto se ha usado del plan gratuito de Supabase (fotos y base de datos).
+- **Entrar en otros grupos**: en *Muro* cada persona ve todos los grupos. En los que no está puede pulsar **Solicitar acceso** (también desde dentro del grupo); un admin la acepta o rechaza en *Admin → Pendientes*. Mientras tanto no ve el muro de ese grupo. Si se rechaza, lo ve y puede volver a pedirlo. Entrar con código de invitación sigue sin necesitar solicitud.
 - La **coordinación** ve y comparte el código de invitación de su grupo en *Muro → grupo → Miembros*; regenerarlo es solo de admins.
 - Los emails solo los ven los admins.
 

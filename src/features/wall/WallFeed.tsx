@@ -1,15 +1,16 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router'
-import { ImagePlus, MessageSquareHeart } from 'lucide-react'
+import { ImagePlus, Lock, MessageSquareHeart } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorState, SkeletonList } from '@/components/ui/States'
 import { useMe } from '@/features/auth/useMe'
+import { JoinRequestButton } from '@/features/groups/JoinRequestButton'
 import { useWall } from './api'
 import { markWallSeen } from './news'
 import { PostCard } from './PostCard'
 
-export function WallFeed({ groupId }: { groupId: string }) {
+export function WallFeed({ groupId, groupName }: { groupId: string; groupName: string }) {
   const { data: me } = useMe()
   const wall = useWall(groupId)
   const posts = wall.data?.pages.flat() ?? []
@@ -34,15 +35,18 @@ export function WallFeed({ groupId }: { groupId: string }) {
         </Link>
       )}
 
-      {wall.isPending ? (
+      {!canPost ? (
+        // Aún no es del grupo: el muro es privado, puede pedir entrar
+        <EmptyState icon={<Lock className="size-8" />} title="Aún no estás en este grupo" action={<JoinRequestButton groupId={groupId} groupName={groupName} />}>
+          El muro solo lo ven las personas de {groupName}. Pide entrar y un admin revisará tu solicitud.
+        </EmptyState>
+      ) : wall.isPending ? (
         <SkeletonList count={3} className="h-48" />
       ) : wall.isError ? (
         <ErrorState error={wall.error} onRetry={() => wall.refetch()} />
       ) : !posts.length ? (
         <EmptyState icon={<MessageSquareHeart className="size-8" />} title="El muro está vacío">
-          {canPost
-            ? 'Sé la primera persona en compartir una foto, un vídeo o unas palabras con el grupo.'
-            : 'Solo las personas del grupo ven y escriben en su muro.'}
+          Sé la primera persona en compartir una foto, un vídeo o unas palabras con el grupo.
         </EmptyState>
       ) : (
         <>

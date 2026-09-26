@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { Spinner } from '@/components/ui/States'
 import { useMe } from '@/features/auth/useMe'
-import { usePendingUsers } from '@/features/admin/api'
+import { useJoinRequests, usePendingUsers } from '@/features/admin/api'
 import { useUnreadCount } from '@/features/announcements/api'
 import { useWallNews } from '@/features/wall/news'
 import { TabBar } from './TabBar'
@@ -14,6 +14,7 @@ export function AppShell() {
   const isAdmin = !!me?.isAdmin
   const { pathname } = useLocation()
   const pending = usePendingUsers({ enabled: isAdmin })
+  const requests = useJoinRequests({ enabled: isAdmin })
   const unread = useUnreadCount()
   const wallNews = useWallNews()
 
@@ -28,7 +29,7 @@ export function AppShell() {
         </ErrorBoundary>
       </main>
       <OfflineBanner />
-      <TabBar isAdmin={isAdmin} pendingCount={pending.data?.length ?? 0} unreadCount={unread} wallNews={wallNews.size} />
+      <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size} />
     </div>
   )
 }
