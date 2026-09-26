@@ -27,6 +27,12 @@ await db.exec(`
   grant execute on function auth.uid() to anon, authenticated;
   grant all on storage.objects to authenticated;
   alter default privileges in schema public grant all on tables to anon, authenticated;
+  -- pg_net simulado: guarda las llamadas para comprobar qué avisos se envían
+  create schema net;
+  create table net.calls (id bigserial primary key, url text, body jsonb, headers jsonb);
+  create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000)
+    returns bigint language sql security definer as $$ insert into net.calls (url, body, headers) values (url, body, headers) returning id $$;
+  grant usage on schema net to anon, authenticated;
   alter default privileges in schema public grant execute on functions to anon, authenticated;
 `)
 
@@ -40,6 +46,8 @@ await db.exec(readFileSync(`${ROOT}/migrations/0007_admin.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0008_instrument_names.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0009_group_requests.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/migrations/0010_disable_invite_codes.sql`, 'utf8'))
+// PGlite no tiene pg_net: se usa el simulado de arriba
+await db.exec(readFileSync(`${ROOT}/migrations/0011_push.sql`, 'utf8').replace(/create extension if not exists pg_net;/i, ''))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8'))
 await db.exec(readFileSync(`${ROOT}/seed.sql`, 'utf8')) // idempotente
 
@@ -409,6 +417,55 @@ await as(G, `select request_group_access($1)`, [raiz])
 await as(A, `select approve_user($1, $2)`, [G, [raiz]])
 check('si entra por otro camino, la solicitud se borra', (await one(`select count(*)::int n from group_join_requests where user_id=$1`, [G])).n === 0)
 check('anon no pide acceso', !!(await asErr(null, `select request_group_access($1)`, [raiz], 'anon')))
+
+console.log('Notificaciones push')
+const calls = async () => (await db.query(`select body from net.calls order by id`)).rows.map((r) => r.body)
+const H = await mk('h@troko.es', 'Hugo')
+const I = await mk('i@troko.es', 'Inés')
+await as(H, `select save_push_subscription('https://push.example/h', 'k', 'a', 'test')`)
+check('una cuenta pendiente puede activar avisos', (await as(H, `select endpoint from push_subscriptions`)).length === 1)
+check('rechazada no puede', /No puedes/.test(await asErr(D, `select save_push_subscription('https://push.example/d', 'k', 'a')`)))
+check('sin configuración no se envía nada', (await calls()).length === 0)
+await db.exec(`insert into private.app_config values ('push_url', 'https://app.test/api/push'), ('push_secret', 's3cret'),
+  ('vapid_public', 'PUB'), ('vapid_private', 'PRIV'), ('vapid_subject', 'mailto:hola@troko.es')`)
+check('clave pública para el navegador', (await as(H, `select push_public_key() k`))[0].k === 'PUB')
+check('nadie lee la configuración privada', !!(await asErr(H, `select * from private.app_config`)))
+await as(A, `select approve_user($1, $2)`, [H, [raiz]])
+let c = await calls()
+check('aprobar la cuenta avisa (una sola vez, no también por el grupo)', c.length === 1 && c[0].kind === 'account_approved' && c[0].id1 === H)
+const approved = (await as(null, `select push_prepare('s3cret', 'account_approved', $1) p`, [H], 'anon'))[0].p
+check('mensaje de aprobación con sus grupos', approved.body.includes('Raíz') && approved.subscriptions.length === 1 && approved.vapid.private === 'PRIV')
+check('secreto incorrecto: no autorizado', /No autorizado/.test(await asErr(null, `select push_prepare('mal', 'account_approved', $1)`, [H], 'anon')))
+await as(A, `select approve_user($1, $2)`, [I, [brote]])
+await as(I, `select save_push_subscription('https://push.example/i', 'k', 'a')`)
+await db.exec(`delete from net.calls`)
+await as(I, `select request_group_access($1)`, [raiz])
+await as(A, `select resolve_group_request($1, $2, true)`, [raiz, I])
+c = await calls()
+check('aceptar en un grupo avisa', c.length === 1 && c[0].kind === 'group_joined' && c[0].id1 === raiz && c[0].id2 === I)
+const joined = (await as(null, `select push_prepare('s3cret', 'group_joined', $1, $2) p`, [raiz, I], 'anon'))[0].p
+check('mensaje "Ya estás en Raíz" solo para ella', joined.title === 'Ya estás en Raíz' && joined.subscriptions.length === 1 && joined.subscriptions[0].endpoint === 'https://push.example/i')
+await db.exec(`delete from net.calls`)
+const hPost = (await as(H, `insert into posts (group_id, body) values ($1, '¡Ensayo extra el sábado!') returning id`, [raiz]))[0].id
+c = await calls()
+check('publicar en el muro avisa', c.length === 1 && c[0].kind === 'post' && c[0].id1 === hPost)
+const postMsg = (await as(null, `select push_prepare('s3cret', 'post', $1) p`, [hPost], 'anon'))[0].p
+check('aviso del muro a las demás personas del grupo, no a quien publica', postMsg.title === 'Raíz' && postMsg.body.startsWith('Hugo: ¡Ensayo extra') &&
+  postMsg.subscriptions.length === 1 && postMsg.subscriptions[0].endpoint === 'https://push.example/i' && postMsg.url === `/muro/${raiz}/p/${hPost}`)
+const photoPost = (await as(H, `insert into posts (group_id) values ($1) returning id`, [raiz]))[0].id
+await as(H, `insert into post_photos (post_id, path, width, height) values ($1, $2, 1, 1), ($1, $3, 1, 1)`, [photoPost, `${raiz}/${photoPost}/a.jpg`, `${raiz}/${photoPost}/b.jpg`])
+check('sin texto: "ha compartido 2 fotos"', (await as(null, `select push_prepare('s3cret', 'post', $1) p`, [photoPost], 'anon'))[0].p.body === 'Hugo ha compartido 2 fotos')
+const spotiPost = (await as(H, `insert into posts (group_id, video_url) values ($1, 'https://open.spotify.com/track/x') returning id`, [raiz]))[0].id
+check('con Spotify: "ha compartido música"', (await as(null, `select push_prepare('s3cret', 'post', $1) p`, [spotiPost], 'anon'))[0].p.body === 'Hugo ha compartido música')
+check('no ve suscripciones ajenas', (await as(I, `select * from push_subscriptions`)).length === 1)
+await as(H, `select save_push_subscription('https://push.example/i', 'k2', 'a2')`)
+check('un dispositivo compartido pasa a la última cuenta', (await one(`select user_id from push_subscriptions where endpoint='https://push.example/i'`)).user_id === H)
+await as(H, `select delete_push_subscription('https://push.example/h')`)
+check('desactivar borra la del dispositivo', (await one(`select count(*)::int n from push_subscriptions where endpoint='https://push.example/h'`)).n === 0)
+await as(null, `select push_forget('s3cret', array['https://push.example/i'])`, [], 'anon')
+check('se olvidan las caducadas', (await one(`select count(*)::int n from push_subscriptions`)).n === 0)
+check('anon no guarda suscripciones', !!(await asErr(null, `select save_push_subscription('https://x', 'k', 'a')`, [], 'anon')))
+check('nadie llama send_push directamente', !!(await asErr(H, `select send_push('post', gen_random_uuid())`)))
 
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

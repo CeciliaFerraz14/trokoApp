@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Clock, LogOut, XCircle } from 'lucide-react'
 import { queryClient } from '@/lib/queryClient'
 import { Button } from '@/components/ui/Button'
+import { PushEnableButton } from '@/components/ui/PushToggle'
 import { AuthLayout } from './AuthLayout'
 import { signOut } from './AuthProvider'
 import type { Profile } from '@/types/database'
@@ -31,6 +32,12 @@ export function PendingPage({ profile }: { profile: Profile }) {
             : 'Tu cuenta está pendiente de aprobación. En cuanto un admin la acepte podrás entrar y pedir acceso a tus grupos. Esta pantalla se actualiza sola.'}
         </p>
       </div>
+
+      {!rejected && (
+        <div className="mt-8 flex justify-center">
+          <PushEnableButton label="Avísame cuando me acepten" />
+        </div>
+      )}
 
       <Button variant="ghost" className="mx-auto mt-6 flex" icon={<LogOut className="size-4" />} onClick={() => signOut()}>
         Cerrar sesión

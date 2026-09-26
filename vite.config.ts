@@ -39,6 +39,8 @@ export default defineConfig({
         // Solo precachear las fuentes latinas (las demás se bajan si hicieran falta)
         globIgnores: ['**/*-{cyrillic,cyrillic-ext,vietnamese,hebrew,greek}-*.woff2'],
         navigateFallback: '/index.html',
+        // Avisos push (public/push-sw.js)
+        importScripts: ['/push-sw.js'],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {

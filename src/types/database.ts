@@ -302,6 +302,9 @@ export type Database = {
       delete_account: { Args: { p_user: string }; Returns: undefined }
       request_group_access: { Args: { p_group: string }; Returns: undefined }
       resolve_group_request: { Args: { p_group: string; p_user: string; p_accept: boolean }; Returns: undefined }
+      push_public_key: { Args: Record<string, never>; Returns: string | null }
+      save_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent?: string }; Returns: undefined }
+      delete_push_subscription: { Args: { p_endpoint: string }; Returns: undefined }
     }
     Enums: {
       app_role: AppRole

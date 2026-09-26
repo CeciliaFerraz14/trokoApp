@@ -7,6 +7,7 @@ import { Badge, GroupDot } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, SectionTitle } from '@/components/ui/Card'
 import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
+import { PushSettingRow } from '@/components/ui/PushToggle'
 import { Spinner } from '@/components/ui/States'
 import { signOut } from '@/features/auth/AuthProvider'
 import { useMe } from '@/features/auth/useMe'
@@ -68,6 +69,7 @@ export function ProfilePage() {
         <section>
           <SectionTitle>Ajustes</SectionTitle>
           <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
+            <PushSettingRow />
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="flex min-h-14 w-full items-center gap-3 px-4 text-left hover:bg-surface-2"

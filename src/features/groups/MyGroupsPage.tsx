@@ -1,11 +1,14 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, UsersRound } from 'lucide-react'
+import { BellRing, ChevronRight, UsersRound, X } from 'lucide-react'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { SectionTitle } from '@/components/ui/Card'
 import { EmptyState, SkeletonList } from '@/components/ui/States'
 import { Badge } from '@/components/ui/Badge'
 import { useMe } from '@/features/auth/useMe'
 import { useWallNews } from '@/features/wall/news'
+import { PushEnableButton } from '@/components/ui/PushToggle'
+import { usePush } from '@/lib/push'
 import { useGroups } from './api'
 import { JoinRequestButton } from './JoinRequestButton'
 
@@ -22,6 +25,7 @@ export function MyGroupsPage() {
     <>
       <PageHeader title="Mis grupos" />
       <Page className="space-y-6">
+        <PushInvite />
         {memberships.length === 0 ? (
           <EmptyState icon={<UsersRound className="size-8" />} title="Aún sin grupo">
             Pide entrar en tu grupo aquí abajo. En cuanto un admin te acepte, verás su muro, sus fotos y quién está en él.
@@ -90,6 +94,41 @@ function GroupInfo({ name, schedule, description }: { name: string; schedule: st
       <p className="font-display text-xl font-bold">{name}</p>
       {schedule && <p className="truncate text-sm text-muted">{schedule}</p>}
       {description && <p className="mt-1 text-sm text-muted">{description}</p>}
+    </div>
+  )
+}
+
+const PUSH_INVITE_KEY = 'troko-push-invite-dismissed'
+
+/** Invitación a activar los avisos, mientras no estén activados (se puede cerrar) */
+function PushInvite() {
+  const { state } = usePush()
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(PUSH_INVITE_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (hidden || state !== 'off') return null
+  const dismiss = () => {
+    try {
+      localStorage.setItem(PUSH_INVITE_KEY, '1')
+    } catch {
+      /* sin almacenamiento: solo esta vez */
+    }
+    setHidden(true)
+  }
+  return (
+    <div className="relative rounded-[1.4rem] border border-brand-blue/40 bg-surface p-4 pr-12">
+      <p className="flex items-center gap-2 font-display text-lg font-semibold">
+        <BellRing className="size-5 text-accent" aria-hidden /> Entérate al momento
+      </p>
+      <p className="mt-1 mb-3 text-sm text-muted">Te avisamos cuando alguien publique en tus grupos o te acepten en uno.</p>
+      <PushEnableButton label="Activar notificaciones" onDone={() => setHidden(true)} />
+      <button type="button" onClick={dismiss} aria-label="Cerrar" className="absolute top-2 right-2 grid size-11 place-items-center rounded-full text-muted hover:text-fg">
+        <X className="size-5" />
+      </button>
     </div>
   )
 }

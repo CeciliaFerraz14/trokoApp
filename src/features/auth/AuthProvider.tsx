@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { clearCachedData, queryClient } from '@/lib/queryClient'
+import { disable as disablePush } from '@/lib/push'
 
 interface AuthState {
   session: Session | null
@@ -31,6 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext)
 
 export async function signOut() {
+  // Este dispositivo deja de recibir los avisos de esta cuenta
+  await disablePush().catch(() => {})
   await supabase.auth.signOut()
   await clearCachedData()
 }
