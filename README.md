@@ -30,7 +30,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0005_events.sql` | Calendario: eventos, repeticiones, asistencia, notas personales y suscripción .ics |
 | `supabase/migrations/0006_wall.sql` | Muro de grupos: publicaciones, fotos (bucket privado), comentarios, reacciones y tiempo real |
 | `supabase/migrations/0007_admin.sql` | Resumen de admin, restablecer contraseñas y borrar cuentas |
-| `supabase/seed.sql` | Los grupos actuales (Puertas Abiertas, Semilla, Brote, Raíz, Bloco, Timbau, Mistura, Utrillo). Se puede repetir sin duplicar |
+| `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
 
