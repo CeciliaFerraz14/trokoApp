@@ -140,3 +140,12 @@
     mask-image: url('/pattern-accent.svg');
   }
 }
+
+/* Logo de Troko Bloco como silueta de un solo color (el PNG se usa de máscara) */
+@layer components {
+  .logo-mark {
+    background-color: var(--color-brand-black);
+    -webkit-mask: url('/logo-troko-bloco.png') center / contain no-repeat;
+    mask: url('/logo-troko-bloco.png') center / contain no-repeat;
+  }
+}

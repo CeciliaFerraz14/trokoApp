@@ -42,6 +42,8 @@ export function PageHeader({ title, subtitle, back, leading, actions, children }
           {subtitle && <div className="truncate text-sm font-semibold text-black/75">{subtitle}</div>}
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {/* Logo de Troko Bloco en la esquina, en negro (el original es azul y no se vería sobre la cabecera) */}
+        <span aria-hidden className="logo-mark h-11 w-16 shrink-0" />
       </div>
       {/* empty:hidden: si el contenido no pinta nada (p. ej. sin próximo evento), no deja hueco */}
       {children && <div className="mx-auto max-w-lg px-4 pb-5 empty:hidden">{children}</div>}
