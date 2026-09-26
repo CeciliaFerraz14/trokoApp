@@ -133,7 +133,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 api/                  Funciones de Vercel: keepalive y calendario .ics
 logos/                Logos originales
 public/               Logos limpios e iconos de la PWA (generados con npm run icons)
-scripts/              prepare-logos.mjs
+scripts/              prepare-logos.mjs · make-pattern.py (fondo de franjas tribales)
 supabase/
   migrations/         SQL por fases
   tests/              Tests de RLS con PGlite

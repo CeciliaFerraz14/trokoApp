@@ -48,9 +48,9 @@
   --danger: #ff7a7a;
   --success: #5ee38f;
   --warning: #fbc02d;
-  /* Fondo con motivos de batucada: geometría en blanco, instrumentos en azul */
-  --pattern-lines: rgb(255 255 255 / 0.07);
-  --pattern-drums: rgb(108 184 230 / 0.2);
+  /* Fondo de franjas tribales: líneas en blanco, franjas y logo en azul */
+  --pattern-neutral: rgb(255 255 255 / 0.1);
+  --pattern-accent: rgb(108 184 230 / 0.16);
 }
 
 /* Claro (opcional) */
@@ -67,8 +67,8 @@
   --danger: #c62828;
   --success: #1b7f3b;
   --warning: #a86400;
-  --pattern-lines: rgb(0 0 0 / 0.07);
-  --pattern-drums: rgb(47 134 187 / 0.2);
+  --pattern-neutral: rgb(0 0 0 / 0.08);
+  --pattern-accent: rgb(47 134 187 / 0.16);
 }
 
 /* Safe areas del notch y la barra de inicio */
@@ -111,27 +111,29 @@
 }
 
 /* -------------------------------------------------------------------------
- * Fondo con motivos de batucada (public/pattern-*.svg). Los SVG se usan como
- * máscara para poder colorearlos con los tokens del tema.
+ * Fondo de franjas tribales (public/pattern-*.svg, generados con
+ * scripts/make-pattern.py). Los SVG se usan como máscara para poder
+ * colorearlos con los tokens del tema.
  * ------------------------------------------------------------------------- */
 @layer components {
-  .pattern-lines,
-  .pattern-drums {
+  .pattern-neutral,
+  .pattern-accent {
     position: absolute;
     inset: 0;
     -webkit-mask-repeat: repeat;
     mask-repeat: repeat;
-    -webkit-mask-size: 270px;
-    mask-size: 270px;
+    /* 1 unidad del SVG = 1 px: sin costuras entre baldosas */
+    -webkit-mask-size: 240px;
+    mask-size: 240px;
   }
-  .pattern-lines {
-    background-color: var(--pattern-lines);
-    -webkit-mask-image: url('/pattern-lines.svg');
-    mask-image: url('/pattern-lines.svg');
+  .pattern-neutral {
+    background-color: var(--pattern-neutral);
+    -webkit-mask-image: url('/pattern-neutral.svg');
+    mask-image: url('/pattern-neutral.svg');
   }
-  .pattern-drums {
-    background-color: var(--pattern-drums);
-    -webkit-mask-image: url('/pattern-drums.svg');
-    mask-image: url('/pattern-drums.svg');
+  .pattern-accent {
+    background-color: var(--pattern-accent);
+    -webkit-mask-image: url('/pattern-accent.svg');
+    mask-image: url('/pattern-accent.svg');
   }
 }
