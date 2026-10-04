@@ -36,6 +36,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0011_push.sql` | Notificaciones push (muro, aceptación en grupos, cuenta aprobada). Ver *Notificaciones* abajo |
 | `supabase/migrations/0012_announcement_media.sql` | Fotos y enlaces en los avisos, y su notificación push |
 | `supabase/migrations/0013_wall_admins_chat.sql` | El muro pasa a ser solo de admins (el resto reacciona) y cada grupo tiene un chat con fotos (bucket privado `chat`) |
+| `supabase/migrations/0014_chat_push.sql` | Notificación push con cada mensaje del chat (una por grupo en el móvil) |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -135,12 +136,13 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Comentarios y reacciones** (👏 ❤️ 😂 🥁 🔥, una por persona).
 - **Moderación**: la coordinación del grupo y los admins pueden borrar publicaciones y comentarios. Al borrar una publicación se borran también sus fotos.
 - **Tiempo real**: lo nuevo aparece sin recargar mientras el grupo está abierto.
-- **Chat** (pestaña *Chat* del grupo): escribe cualquier persona del grupo (y los admins). Texto con enlaces pulsables y hasta 6 fotos por mensaje, en el bucket **privado** `chat` (solo las ve el grupo; no salen en la Galería). Los mensajes no se editan; tocando un mensaje, quien lo escribió, la coordinación del grupo o un admin pueden borrarlo. Los mensajes del chat no envían notificaciones push.
+- **Chat** (pestaña *Chat* del grupo): escribe cualquier persona del grupo (y los admins). Texto con enlaces pulsables y hasta 6 fotos por mensaje, en el bucket **privado** `chat` (solo las ve el grupo; no salen en la Galería). Los mensajes no se editan; tocando un mensaje, quien lo escribió, la coordinación del grupo o un admin pueden borrarlo. Cada mensaje nuevo envía una notificación push a las demás personas del grupo (ver *Notificaciones*).
 
 ## 7e. Notificaciones
 
 - Cada persona las activa en su móvil en **Perfil → Notificaciones** (también hay una invitación en *Muro* y "Avísame cuando me acepten" en la pantalla de espera). En **iPhone** solo funcionan con la app **instalada en la pantalla de inicio** e iOS 16.4 o posterior.
-- Llegan cuando: alguien publica en el muro de tu grupo, se publica un aviso para ti (general o de tu grupo), te aceptan o te añaden a un grupo y cuando aprueban tu cuenta. Quien publica no recibe su propio aviso.
+- Llegan cuando: alguien publica en el muro de tu grupo, alguien escribe en el chat de tu grupo, se publica un aviso para ti (general o de tu grupo), te aceptan o te añaden a un grupo y cuando aprueban tu cuenta. Quien publica no recibe su propio aviso.
+- Las del **chat** se agrupan: en el móvil se ve solo la última de cada grupo (la nueva sustituye a la anterior y vuelve a sonar), para no llenar la bandeja.
 - Funcionamiento: un trigger de la base de datos llama con `pg_net` a `api/push.ts` (Vercel), que pide a `push_prepare()` el mensaje y los destinatarios y los envía con Web Push. Las suscripciones caducadas se borran solas.
 - **Configuración** (ya hecha en el proyecto): las claves VAPID, el secreto compartido y la URL de envío están **solo** en la tabla `private.app_config` de Supabase (no en el repositorio ni en Vercel). Para montarlo en otro proyecto: generar claves con `npx web-push generate-vapid-keys` y rellenar esa tabla como indica la cabecera de `0011_push.sql`. Las llamadas y sus respuestas se ven en `net._http_response`.
 - Al cerrar sesión, ese móvil deja de recibir los avisos de esa cuenta.

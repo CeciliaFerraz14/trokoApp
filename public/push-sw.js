@@ -13,6 +13,8 @@ self.addEventListener('push', (event) => {
       icon: '/pwa-192x192.png',
       badge: '/pwa-64x64.png',
       tag: data.tag,
+      // El chat usa una etiqueta por grupo: la nueva sustituye a la anterior y suena
+      renotify: !!(data.tag && data.renotify),
       data: { url: data.url || '/' },
     }),
   )

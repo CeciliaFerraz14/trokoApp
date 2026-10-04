@@ -1,6 +1,6 @@
 // Envía notificaciones push: POST /api/push {kind, id1, id2}
-// La llama la base de datos (pg_net) al publicar en un muro, al entrar en un
-// grupo o al aprobarse una cuenta. Con el secreto compartido pide a
+// La llama la base de datos (pg_net) al publicar en un muro o en un aviso, con
+// cada mensaje del chat, al entrar en un grupo o al aprobarse una cuenta. Con el secreto compartido pide a
 // push_prepare() el mensaje, las suscripciones y las claves VAPID; después
 // envía con web-push y olvida las suscripciones caducadas.
 import webpush from 'web-push'
@@ -10,6 +10,8 @@ interface Prepared {
   body: string
   url: string
   tag: string
+  /** Volver a sonar aunque sustituya a otra con la misma etiqueta (chat) */
+  renotify?: boolean
   vapid: { public: string; private: string; subject: string }
   subscriptions: { endpoint: string; p256dh: string; auth: string }[]
 }
@@ -25,9 +27,9 @@ export async function POST(request: Request) {
   const { kind, id1, id2 } = (await request.json().catch(() => ({}))) as { kind?: string; id1?: string; id2?: string }
   if (!secret || !kind || !id1) return new Response('Petición no válida', { status: 400 })
 
-  // Publicaciones y avisos con fotos se guardan en dos pasos (texto y fotos):
-  // se espera un momento para que la notificación diga "ha compartido 2 fotos"
-  if (kind === 'post' || kind === 'announcement') await sleep(1500)
+  // Publicaciones, avisos y mensajes con fotos se guardan en dos pasos (texto y
+  // fotos): se espera un momento para que la notificación diga "ha compartido 2 fotos"
+  if (kind === 'post' || kind === 'announcement' || kind === 'chat') await sleep(1500)
 
   const rpc = (fn: string, args: object) =>
     fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
   if (!msg || !msg.subscriptions.length) return Response.json({ sent: 0 })
 
   webpush.setVapidDetails(msg.vapid.subject, msg.vapid.public, msg.vapid.private)
-  const payload = JSON.stringify({ title: msg.title, body: msg.body, url: msg.url, tag: msg.tag })
+  const payload = JSON.stringify({ title: msg.title, body: msg.body, url: msg.url, tag: msg.tag, renotify: !!msg.renotify })
   const gone: string[] = []
   let sent = 0
   await Promise.all(

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { removePhotoFiles, signPaths, signPhotoSets, SIGNED_TTL, thumbPath, uploadPhotos, type PhotoBucket, type SignedPhoto } from '@/lib/photos'
 import { useAuth } from '@/features/auth/AuthProvider'
@@ -145,8 +145,29 @@ export function useWallRealtime(groupId: string | undefined) {
     }
     const channel = supabase.channel(`wall:${groupId}`)
     for (const table of WALL_TABLES) {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `group_id=eq.${groupId}` }, refresh)
+      for (const event of ['INSERT', 'UPDATE'] as const) {
+        channel.on('postgres_changes', { event, schema: 'public', table, filter: `group_id=eq.${groupId}` }, refresh)
+      }
     }
+    // Los borrados no se pueden filtrar (solo traen la clave primaria): se
+    // refresca si lo borrado está en pantalla
+    const shownPosts = () => {
+      const ids = new Set<string>()
+      for (const page of qc.getQueryData<InfiniteData<WallPost[]>>(['wall', groupId])?.pages ?? []) for (const p of page) ids.add(p.id)
+      for (const [, post] of qc.getQueriesData<WallPost | null>({ queryKey: ['post'] })) if (post?.group_id === groupId) ids.add(post.id)
+      return ids
+    }
+    const shownComments = () =>
+      new Set(qc.getQueriesData<WallComment[]>({ queryKey: ['comments'] }).flatMap(([, list]) => (list ?? []).map((c) => c.id)))
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, ({ old }) => {
+      if (shownPosts().has((old as { id?: string }).id ?? '')) refresh()
+    })
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_comments' }, ({ old }) => {
+      if (shownComments().has((old as { id?: string }).id ?? '')) refresh()
+    })
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_reactions' }, ({ old }) => {
+      if (shownPosts().has((old as { post_id?: string }).post_id ?? '')) refresh()
+    })
     channel.subscribe()
     return () => {
       clearTimeout(timer.current)

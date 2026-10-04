@@ -546,5 +546,31 @@ await say(H, raiz, 'Adiós')
 await as(A, `select delete_account($1)`, [H])
 check('al borrar la cuenta se van sus mensajes', (await one(`select count(*)::int n from chat_messages where body='Adiós'`)).n === 0)
 
+await db.exec(readFileSync(`${ROOT}/migrations/0014_chat_push.sql`, 'utf8'))
+
+console.log('Notificaciones del chat')
+// F, G, I en Raíz; C solo en Brote. La configuración push sigue de la sección de push.
+await as(F, `select save_push_subscription('https://push.example/f', 'k', 'a')`)
+await as(I, `select save_push_subscription('https://push.example/i3', 'k', 'a')`)
+await as(C, `select save_push_subscription('https://push.example/c', 'k', 'a')`)
+await db.exec(`delete from net.calls`)
+const chatMsg = (await as(F, `insert into chat_messages (group_id, body) values ($1, '¿Ensayamos mañana?') returning id`, [raiz]))[0].id
+c = await calls()
+check('un mensaje del chat avisa', c.length === 1 && c[0].kind === 'chat' && c[0].id1 === chatMsg)
+const chatPush = (await as(null, `select push_prepare('s3cret', 'chat', $1) p`, [chatMsg], 'anon'))[0].p
+check('título del grupo, autor y texto', chatPush.title === 'Raíz · chat' && chatPush.body === 'Fede: ¿Ensayamos mañana?')
+check('abre el chat del grupo', chatPush.url === `/muro/${raiz}?tab=chat`)
+check('a las demás personas del grupo, no a quien escribe ni a otros grupos',
+  chatPush.subscriptions.length === 1 && chatPush.subscriptions[0].endpoint === 'https://push.example/i3')
+check('una etiqueta por chat que vuelve a sonar', chatPush.tag === `chat-${raiz}` && chatPush.renotify === true)
+const photoMsg = (await as(I, `insert into chat_messages (group_id) values ($1) returning id`, [raiz]))[0].id
+await as(I, `insert into chat_photos (message_id, path, width, height) values ($1, $2, 1, 1), ($1, $3, 1, 1)`, [photoMsg, `${raiz}/${photoMsg}/a.jpg`, `${raiz}/${photoMsg}/b.jpg`])
+check('sin texto: "ha enviado 2 fotos"', (await as(null, `select push_prepare('s3cret', 'chat', $1) p`, [photoMsg], 'anon'))[0].p.body === 'Inés ha enviado 2 fotos')
+const photoMsg2 = (await as(I, `insert into chat_messages (group_id) values ($1) returning id`, [raiz]))[0].id
+check('sin texto y fotos aún sin guardar: "ha enviado una foto"', (await as(null, `select push_prepare('s3cret', 'chat', $1) p`, [photoMsg2], 'anon'))[0].p.body === 'Inés ha enviado una foto')
+const joinedPush = (await as(null, `select push_prepare('s3cret', 'group_joined', $1, $2) p`, [raiz, I], 'anon'))[0].p
+check('los demás avisos siguen con su etiqueta propia y sin volver a sonar', joinedPush.tag === `group_joined-${raiz}-${I}` && joinedPush.renotify === false)
+check('nadie llama push_on_chat por la API', !!(await asErr(F, `select push_on_chat()`)))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)
