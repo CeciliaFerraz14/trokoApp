@@ -73,6 +73,11 @@ export function useSaveBirthday() {
         .upsert({ user_id: userId!, birth_date: birthDate, share }, { onConflict: 'user_id' })
       if (error) throw error
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['birthday', userId] }),
+    // Se pone ya en la caché: si se vuelve a abrir Editar perfil, el formulario
+    // arranca con lo guardado y no con lo anterior
+    onSuccess: (_, { birthDate, share }) => {
+      qc.setQueryData(['birthday', userId], { birth_date: birthDate, share })
+      void qc.invalidateQueries({ queryKey: ['birthday', userId] })
+    },
   })
 }
