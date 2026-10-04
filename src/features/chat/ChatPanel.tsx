@@ -37,6 +37,8 @@ function Chat({ groupId }: { groupId: string }) {
   const remove = useDeleteMessage()
   const toast = useToast()
   const [selected, setSelected] = useState<string | null>(null)
+  // Alto de la caja de escribir (fija abajo): se deja ese hueco al final de la lista
+  const [composerHeight, setComposerHeight] = useState(0)
   useChatRealtime(groupId)
 
   // Las páginas llegan del más nuevo al más antiguo; se muestran al revés
@@ -46,10 +48,10 @@ function Chat({ groupId }: { groupId: string }) {
   const newest = messages[messages.length - 1]?.id
   const scrolled = useRef(false)
   useEffect(() => {
-    if (!newest) return
+    if (!newest || !composerHeight) return
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: scrolled.current ? 'smooth' : 'instant' })
     scrolled.current = true
-  }, [newest])
+  }, [newest, composerHeight])
 
   const onDelete = (m: ChatItem) => {
     if (!confirm('¿Borrar este mensaje?')) return
@@ -60,7 +62,7 @@ function Chat({ groupId }: { groupId: string }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" style={{ paddingBottom: composerHeight + 12 }}>
       {chat.isPending ? (
         <SkeletonList count={4} className="h-14" />
       ) : chat.isError ? (
@@ -103,7 +105,7 @@ function Chat({ groupId }: { groupId: string }) {
           </ol>
         </>
       )}
-      <Composer groupId={groupId} />
+      <Composer groupId={groupId} onHeight={setComposerHeight} />
     </div>
   )
 }
@@ -170,9 +172,41 @@ function Message({
   )
 }
 
-/** Caja para escribir, fija abajo (encima de la barra de navegación) */
-function Composer({ groupId }: { groupId: string }) {
+/**
+ * Teclado en pantalla: cuánto tapa por abajo (0 si no está). En iPhone y en
+ * Android el teclado encoge solo la zona visible, y lo fijo abajo se queda detrás.
+ */
+function useKeyboardInset() {
+  const [inset, setInset] = useState(0)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      const covered = window.innerHeight - vv.height - vv.offsetTop
+      setInset(covered > 80 ? covered : 0)
+    }
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [])
+  return inset
+}
+
+/** Caja para escribir, fija abajo: encima de la barra de navegación o del teclado */
+function Composer({ groupId, onHeight }: { groupId: string; onHeight: (height: number) => void }) {
   const send = useSendMessage()
+  const keyboard = useKeyboardInset()
+  const box = useRef<HTMLFormElement>(null)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const observer = new ResizeObserver(() => onHeight(el.offsetHeight))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [onHeight])
   const toast = useToast()
   const input = useRef<HTMLInputElement>(null)
   const [body, setBody] = useState('')
@@ -209,68 +243,75 @@ function Composer({ groupId }: { groupId: string }) {
   const uploading = progress && progress[1] > 0 && progress[0] < progress[1]
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="sticky bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-10 space-y-2 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/30"
+    <div
+      className="fixed inset-x-0 z-20 px-safe"
+      // Sin teclado: justo encima de la barra de navegación (4.75rem + safe area)
+      style={{ bottom: keyboard ? keyboard + 8 : 'calc(5.25rem + env(safe-area-inset-bottom))' }}
     >
-      {files.length > 0 && (
-        <ul className="flex gap-2 overflow-x-auto">
-          {previews.map((url, i) => (
-            <li key={url} className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-surface-2">
-              <img src={url} alt="" className="size-full object-cover" />
-              <button
-                type="button"
-                aria-label={`Quitar foto ${i + 1}`}
-                onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                className="absolute top-0.5 right-0.5 grid size-6 place-items-center rounded-full bg-black/70 text-white"
-              >
-                <X className="size-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {uploading && <p className="px-1 text-sm text-muted">Subiendo fotos {progress[0] + 1}/{progress[1]}…</p>}
-      <div className="flex items-end gap-1">
-        <input
-          ref={input}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => {
-            addFiles(e.target.files)
-            e.target.value = ''
-          }}
-        />
-        <IconButton
-          type="button"
-          label="Añadir fotos"
-          className="shrink-0 text-accent"
-          disabled={files.length >= MAX_PHOTOS || send.isPending}
-          onClick={() => input.current?.click()}
-        >
-          <ImagePlus className="size-5" />
-        </IconButton>
-        <TextArea
-          label="Escribe un mensaje"
-          className="flex-1 [&_label]:sr-only [&_textarea]:max-h-40 [&_textarea]:resize-none [&_textarea]:field-sizing-content"
-          rows={1}
-          maxLength={2000}
-          placeholder="Escribe un mensaje…"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
-        <Button
-          type="submit"
-          aria-label="Enviar mensaje"
-          loading={send.isPending}
-          disabled={!body.trim() && !files.length}
-          className="size-11 shrink-0 px-0!"
-        >
-          {!send.isPending && <SendHorizontal className="size-5" />}
-        </Button>
-      </div>
-    </form>
+      <form
+        ref={box}
+        onSubmit={onSubmit}
+        className="mx-auto max-w-lg space-y-2 rounded-2xl border border-line bg-surface p-2 shadow-lg shadow-black/30"
+      >
+        {files.length > 0 && (
+          <ul className="flex gap-2 overflow-x-auto">
+            {previews.map((url, i) => (
+              <li key={url} className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-surface-2">
+                <img src={url} alt="" className="size-full object-cover" />
+                <button
+                  type="button"
+                  aria-label={`Quitar foto ${i + 1}`}
+                  onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                  className="absolute top-0.5 right-0.5 grid size-6 place-items-center rounded-full bg-black/70 text-white"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {uploading && <p className="px-1 text-sm text-muted">Subiendo fotos {progress[0] + 1}/{progress[1]}…</p>}
+        <div className="flex items-end gap-1">
+          <input
+            ref={input}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              addFiles(e.target.files)
+              e.target.value = ''
+            }}
+          />
+          <IconButton
+            type="button"
+            label="Añadir fotos"
+            className="shrink-0 text-accent"
+            disabled={files.length >= MAX_PHOTOS || send.isPending}
+            onClick={() => input.current?.click()}
+          >
+            <ImagePlus className="size-5" />
+          </IconButton>
+          <TextArea
+            label="Escribe un mensaje"
+            className="flex-1 [&_label]:sr-only [&_textarea]:max-h-40 [&_textarea]:resize-none [&_textarea]:field-sizing-content"
+            rows={1}
+            maxLength={2000}
+            placeholder="Escribe un mensaje…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+          <Button
+            type="submit"
+            aria-label="Enviar mensaje"
+            loading={send.isPending}
+            disabled={!body.trim() && !files.length}
+            className="size-11 shrink-0 px-0!"
+          >
+            {!send.isPending && <SendHorizontal className="size-5" />}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }
