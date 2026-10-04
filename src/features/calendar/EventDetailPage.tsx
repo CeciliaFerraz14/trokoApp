@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Ban, CalendarDays, CalendarPlus, MapPin, Pencil, Repeat, RotateCcw, StickyNote, Trash2 } from 'lucide-react'
+import { Ban, CalendarDays, MapPin, Pencil, Repeat, RotateCcw, StickyNote, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { formatDayHeading, formatEventTime } from '@/lib/dates'
@@ -19,9 +19,7 @@ import type { AttendanceStatus } from '@/types/database'
 import { categoryOf } from './categories'
 import { STATUS_UI } from './EventCard'
 import {
-  icsUrl,
   useAttendees,
-  useCalendarToken,
   useDeleteEvent,
   useEvent,
   useMyNote,
@@ -144,7 +142,6 @@ export function EventDetailPage() {
 
         <Attendance eventId={e.id} myStatus={e.myStatus} disabled={e.cancelled} />
         <MyNote eventId={e.id} />
-        <AddToCalendar eventId={e.id} />
 
         {canManage && (
           <section className="space-y-3 border-t border-line pt-5">
@@ -302,17 +299,5 @@ function MyNote({ eventId }: { eventId: string }) {
         hint={save.isPending ? 'Guardando…' : 'Se guarda al salir del campo.'}
       />
     </section>
-  )
-}
-
-function AddToCalendar({ eventId }: { eventId: string }) {
-  const token = useCalendarToken()
-  if (!token.data) return null
-  return (
-    <a href={icsUrl(token.data, eventId)} className="block">
-      <Button variant="secondary" block icon={<CalendarPlus className="size-4" />} tabIndex={-1}>
-        Añadir a mi calendario
-      </Button>
-    </a>
   )
 }

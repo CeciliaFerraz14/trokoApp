@@ -586,5 +586,11 @@ for (const c of ['no_class', 'event', 'workshop']) {
 }
 check('ya no se puede usar "ensayo"', !!(await asErr(A, `insert into events (title, starts_at, category) values ('x', now(), 'rehearsal')`)))
 
+console.log('Sin suscripción .ics (0016)')
+await db.exec(readFileSync(`${ROOT}/migrations/0016_drop_calendar_feed.sql`, 'utf8'))
+check('ya no existe el feed público', !!(await asErr(null, `select * from calendar_feed('x')`, [], 'anon')))
+check('ni los enlaces secretos', !!(await asErr(F, `select my_calendar_token()`)) && !(await one(`select to_regclass('public.calendar_tokens') t`)).t)
+check('borrar una cuenta sigue funcionando', !(await asErr(A, `select delete_account($1)`, [C])))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

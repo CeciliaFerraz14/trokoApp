@@ -345,8 +345,6 @@ export type Database = {
       admin_user_emails: { Args: Record<string, never>; Returns: { id: string; email: string }[] }
       is_admin: { Args: Record<string, never>; Returns: boolean }
       update_event_series: { Args: { p_rows: EventSeriesRow[] }; Returns: number }
-      my_calendar_token: { Args: Record<string, never>; Returns: string }
-      regenerate_calendar_token: { Args: Record<string, never>; Returns: string }
       admin_stats: { Args: Record<string, never>; Returns: AdminStats }
       admin_reset_password: { Args: { p_user: string; p_password: string }; Returns: undefined }
       account_files: { Args: { p_user: string }; Returns: string[] }

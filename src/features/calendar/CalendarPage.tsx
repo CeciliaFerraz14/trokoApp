@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { format, startOfDay, startOfMonth, startOfToday } from 'date-fns'
-import { CalendarDays, CalendarSync, Plus } from 'lucide-react'
+import { CalendarDays, Plus } from 'lucide-react'
 import { formatDayHeading } from '@/lib/dates'
 import { SectionTitle } from '@/components/ui/Card'
 import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
@@ -40,9 +40,6 @@ export function CalendarPage() {
         title="Calendario"
         actions={
           <>
-            <HeaderLink to="/calendario/suscribirse" label="Añadir a mi calendario del móvil">
-              <CalendarSync className="size-5" />
-            </HeaderLink>
             {canPublish(me) && (
               <HeaderLink
                 to={`/calendario/nuevo${view === 'mes' && params.get('dia') ? `?dia=${params.get('dia')}` : ''}`}

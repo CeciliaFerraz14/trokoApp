@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { CalendarSync, ChevronRight, KeyRound, Loader2, Trash2, LogOut, Moon, Pencil, Smartphone, Sun } from 'lucide-react'
+import { ChevronRight, KeyRound, Loader2, Trash2, LogOut, Moon, Pencil, Smartphone, Sun } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge, GroupDot } from '@/components/ui/Badge'
@@ -81,11 +81,6 @@ export function ProfilePage() {
             <Link to="/perfil/contrasena" className="flex min-h-14 items-center gap-3 px-4 hover:bg-surface-2">
               <KeyRound className="size-5 text-accent" />
               <span className="flex-1 font-semibold">Cambiar contraseña</span>
-              <ChevronRight className="size-5 text-muted" />
-            </Link>
-            <Link to="/calendario/suscribirse" className="flex min-h-14 items-center gap-3 px-4 hover:bg-surface-2">
-              <CalendarSync className="size-5 text-accent" />
-              <span className="flex-1 font-semibold">Calendario en el móvil</span>
               <ChevronRight className="size-5 text-muted" />
             </Link>
             <Link to="/instalar" className="flex min-h-14 items-center gap-3 px-4 hover:bg-surface-2">

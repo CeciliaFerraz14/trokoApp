@@ -37,6 +37,8 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0012_announcement_media.sql` | Fotos y enlaces en los avisos, y su notificación push |
 | `supabase/migrations/0013_wall_admins_chat.sql` | El muro pasa a ser solo de admins (el resto reacciona) y cada grupo tiene un chat con fotos (bucket privado `chat`) |
 | `supabase/migrations/0014_chat_push.sql` | Notificación push con cada mensaje del chat (una por grupo en el móvil) |
+| `supabase/migrations/0015_event_categories.sql` | Tipos de evento: fuera Ensayo y Reunión; nuevos No hay clase, Evento y Talleres especiales |
+| `supabase/migrations/0016_drop_calendar_feed.sql` | Quita la suscripción al calendario del móvil (.ics): función pública, enlaces secretos y su tabla |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -126,7 +128,6 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Repeticiones**: cada semana, cada dos semanas o cada mes, hasta 60 fechas. Cada fecha es un evento propio: tiene su asistencia y se puede cancelar o cambiar sola. Al editar se elige *Solo este* o *Este y los siguientes* (si se cambia la hora, las siguientes se mueven igual).
 - **Asistencia**: *Voy / Quizá / No voy*. Quien ve el evento ve quién va.
 - **Mi nota**: nota privada por evento (solo la ve quien la escribe).
-- **Calendario del móvil** (Perfil → *Calendario en el móvil*): suscripción `.ics` al Calendario de Apple o Google Calendar, servida por `api/ics.ts`. Usa un enlace secreto personal que se puede regenerar. Solo funciona desplegado en Vercel (en `npm run dev` no hay funciones de `api/`).
 
 ## 7d. Muro de grupos
 
@@ -150,7 +151,7 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 ## 8. Estructura
 
 ```
-api/                  Funciones de Vercel: keepalive y calendario .ics
+api/                  Funciones de Vercel: keepalive y notificaciones push
 logos/                Logos originales
 public/               Logos limpios e iconos de la PWA (generados con npm run icons)
 scripts/              prepare-logos.mjs · make-pattern.py (fondo de franjas tribales)
@@ -187,7 +188,7 @@ src/
 
 - [x] **1. Base**: PWA, autenticación, registro con aprobación, roles, grupos, códigos de invitación, perfil, panel de admin y navegación.
 - [x] **2. Avisos**: tablón por grupos, fijados, importantes, no leídos.
-- [x] **3. Calendario y eventos**: categorías, recurrencias, asistencia, notas personales, .ics.
+- [x] **3. Calendario y eventos**: categorías, recurrencias, asistencia, notas personales (la suscripción .ics se quitó en la migración 0016).
 - [x] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
 - [x] **5. Admin completo y pulido general**: resumen y uso del plan, contraseñas y borrado de cuentas desde la app, código de invitación para la coordinación, novedades del muro, próximo evento en Avisos, pantalla de error y carga diferida de pantallas.
 - [x] **Notificaciones push** (muro, avisos, aceptación en grupos, cuenta aprobada).

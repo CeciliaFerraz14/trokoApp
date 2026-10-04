@@ -274,39 +274,3 @@ export function useSetCancelled() {
     onSuccess: invalidate,
   })
 }
-
-// ---------------------------------------------------------------------------
-// Suscripción .ics
-// ---------------------------------------------------------------------------
-
-export function useCalendarToken() {
-  return useQuery({
-    queryKey: ['calendar-token'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('my_calendar_token')
-      if (error) throw error
-      return data
-    },
-    staleTime: Infinity,
-  })
-}
-
-export function useRegenerateCalendarToken() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.rpc('regenerate_calendar_token')
-      if (error) throw error
-      return data
-    },
-    onSuccess: (token) => qc.setQueryData(['calendar-token'], token),
-  })
-}
-
-/** Enlace del .ics (la función de Vercel en /api/ics) */
-export function icsUrl(token: string, eventId?: string) {
-  const u = new URL('/api/ics', location.origin)
-  u.searchParams.set('token', token)
-  if (eventId) u.searchParams.set('event', eventId)
-  return u.toString()
-}

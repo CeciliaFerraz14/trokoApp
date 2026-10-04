@@ -23,7 +23,6 @@ import { TribalPattern } from '@/components/ui/TribalPattern'
 // Pantallas secundarias (formularios, detalle de publicación…): se cargan al abrirlas
 const AnnouncementFormPage = lazy(() => import('@/features/announcements/AnnouncementFormPage').then((m) => ({ default: m.AnnouncementFormPage })))
 const EventFormPage = lazy(() => import('@/features/calendar/EventFormPage').then((m) => ({ default: m.EventFormPage })))
-const SubscribePage = lazy(() => import('@/features/calendar/SubscribePage').then((m) => ({ default: m.SubscribePage })))
 const ComposerPage = lazy(() => import('@/features/wall/ComposerPage').then((m) => ({ default: m.ComposerPage })))
 const PostPage = lazy(() => import('@/features/wall/PostPage').then((m) => ({ default: m.PostPage })))
 
@@ -60,7 +59,6 @@ export function App() {
             <Route path="/avisos/:id/editar" element={<AnnouncementFormPage />} />
             <Route path="/calendario" element={<CalendarPage />} />
             <Route path="/calendario/nuevo" element={<EventFormPage />} />
-            <Route path="/calendario/suscribirse" element={<SubscribePage />} />
             <Route path="/calendario/:id" element={<EventDetailPage />} />
             <Route path="/calendario/:id/editar" element={<EventFormPage />} />
             <Route path="/muro" element={<MyGroupsPage />} />
