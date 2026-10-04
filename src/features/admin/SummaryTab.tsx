@@ -53,13 +53,13 @@ export function SummaryTab() {
           <Usage
             icon={<HardDrive className="size-4" />}
             label="Fotos"
-            used={s.storage.wall_bytes + s.storage.avatars_bytes}
+            used={s.storage.wall_bytes + (s.storage.chat_bytes ?? 0) + s.storage.avatars_bytes}
             limit={STORAGE_LIMIT}
-            detail={`Muro ${formatBytes(s.storage.wall_bytes)} · avatares ${formatBytes(s.storage.avatars_bytes)}`}
+            detail={`Muro ${formatBytes(s.storage.wall_bytes)} · chat ${formatBytes(s.storage.chat_bytes ?? 0)} · avatares ${formatBytes(s.storage.avatars_bytes)}`}
           />
           <Usage icon={<Database className="size-4" />} label="Base de datos" used={s.database_bytes} limit={DATABASE_LIMIT} />
           <p className="text-sm text-muted">
-            Si alguna barra se acerca al final, borra fotos antiguas del muro o pasa el proyecto a un plan de pago de Supabase.
+            Si alguna barra se acerca al final, borra fotos antiguas del muro o del chat, o pasa el proyecto a un plan de pago de Supabase.
           </p>
         </Card>
       </section>
@@ -72,6 +72,7 @@ export function SummaryTab() {
           <Count icon={<MessagesSquare className="size-4" />} value={s.content.posts} label="publicaciones" />
           <Count icon={<Image className="size-4" />} value={s.content.photos} label="fotos" />
           <Count icon={<MessageSquare className="size-4" />} value={s.content.comments} label="comentarios" />
+          <Count icon={<MessagesSquare className="size-4" />} value={s.content.messages ?? 0} label="mensajes del chat" />
         </Card>
       </section>
 

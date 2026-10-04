@@ -31,14 +31,13 @@ export function ComposerPage() {
 
   const video = parseVideo(videoUrl)
   const videoInvalid = !!videoUrl.trim() && !video
-  const isMember = !!me && (me.isAdmin || me.memberships.some((m) => m.group.id === groupId))
 
-  if (!isMember) {
+  if (!me?.isAdmin) {
     return (
       <>
         <PageHeader title="Nueva publicación" back />
-        <EmptyState icon={<UsersRound className="size-8" />} title="No estás en este grupo">
-          Solo las personas del grupo pueden publicar en su muro.
+        <EmptyState icon={<UsersRound className="size-8" />} title="Solo para admins">
+          En el muro publican los admins. Para compartir algo con el grupo, usa el chat.
         </EmptyState>
       </>
     )

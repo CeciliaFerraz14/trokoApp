@@ -155,6 +155,26 @@ export type PostReaction = {
   created_at: string
 }
 
+export type ChatMessage = {
+  id: string
+  group_id: string
+  author_id: string
+  body: string
+  created_at: string
+}
+
+export type ChatPhoto = {
+  id: string
+  message_id: string
+  group_id: string
+  /** <group_id>/<message_id>/<id>.jpg en el bucket privado "chat" (miniatura: <id>_t.jpg) */
+  path: string
+  width: number
+  height: number
+  position: number
+  created_at: string
+}
+
 export type JoinRequestStatus = 'pending' | 'rejected'
 
 export type GroupJoinRequest = {
@@ -168,8 +188,8 @@ export type GroupJoinRequest = {
 /** Resumen del panel de admin (función admin_stats) */
 export type AdminStats = {
   people: { active: number; pending: number; rejected: number; admins: number }
-  content: { announcements: number; events: number; posts: number; photos: number; comments: number }
-  storage: { wall_bytes: number; avatars_bytes: number }
+  content: { announcements: number; events: number; posts: number; photos: number; comments: number; messages: number }
+  storage: { wall_bytes: number; chat_bytes: number; avatars_bytes: number }
   database_bytes: number
 }
 
@@ -297,6 +317,18 @@ export type Database = {
           Rel<'post_reactions_group_id_fkey', 'group_id', 'groups'>,
         ]
       }
+      chat_messages: {
+        Row: ChatMessage
+        Insert: { id?: string; group_id: string; body: string }
+        Update: never
+        Relationships: [Rel<'chat_messages_author_id_fkey', 'author_id', 'profiles'>, Rel<'chat_messages_group_id_fkey', 'group_id', 'groups'>]
+      }
+      chat_photos: {
+        Row: ChatPhoto
+        Insert: Partial<Omit<ChatPhoto, 'group_id' | 'created_at'>> & { message_id: string; path: string; width: number; height: number }
+        Update: never
+        Relationships: [Rel<'chat_photos_message_id_fkey', 'message_id', 'chat_messages'>, Rel<'chat_photos_group_id_fkey', 'group_id', 'groups'>]
+      }
       group_join_requests: {
         Row: GroupJoinRequest
         Insert: never
@@ -318,6 +350,7 @@ export type Database = {
       admin_stats: { Args: Record<string, never>; Returns: AdminStats }
       admin_reset_password: { Args: { p_user: string; p_password: string }; Returns: undefined }
       account_files: { Args: { p_user: string }; Returns: string[] }
+      account_chat_files: { Args: { p_user: string }; Returns: string[] }
       delete_account: { Args: { p_user: string }; Returns: undefined }
       request_group_access: { Args: { p_group: string }; Returns: undefined }
       resolve_group_request: { Args: { p_group: string; p_user: string; p_accept: boolean }; Returns: undefined }

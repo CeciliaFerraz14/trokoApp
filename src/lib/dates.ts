@@ -50,3 +50,13 @@ export function fromInputs(date: string, time = '00:00') {
   const [h, min] = time.split(':').map(Number)
   return new Date(y, m - 1, d, h, min)
 }
+
+/** Separador de día en el chat: "Hoy", "Ayer", "Lunes 3 de octubre" */
+export function formatPastDay(value: string | Date) {
+  const date = new Date(value)
+  const days = differenceInCalendarDays(new Date(), date)
+  if (days === 0) return 'Hoy'
+  if (days === 1) return 'Ayer'
+  const s = format(date, isSameYear(date, new Date()) ? "EEEE d 'de' MMMM" : "EEEE d 'de' MMMM 'de' yyyy", { locale: es })
+  return s[0].toUpperCase() + s.slice(1)
+}

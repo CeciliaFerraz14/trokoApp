@@ -493,5 +493,58 @@ check('cambiar el enlace marca "editado"', !!(await one(`select edited_at from a
 check('al borrar el aviso se borran sus fotos', (await as(A, `delete from announcements where id=$1 returning id`, [ann.id])).length === 1 &&
   (await one(`select count(*)::int n from announcement_photos`)).n === 0)
 
+// 0013 se aplica aquí: las secciones de arriba prueban el muro tal y como era
+// (moderación, fotos, cascadas…), y esta, lo que cambia
+await db.exec(readFileSync(`${ROOT}/migrations/0013_wall_admins_chat.sql`, 'utf8'))
+
+console.log('Muro solo de admins')
+// A admin; F, G, H, I en Raíz; C solo en Brote. G coordina Raíz.
+await db.query(`update group_members set role='coordinator' where user_id=$1 and group_id=$2`, [G, raiz])
+check('un miembro ya no publica', !!(await asErr(H, `insert into posts (group_id, body) values ($1, 'x')`, [raiz])))
+check('la coordinación tampoco', !!(await asErr(G, `insert into posts (group_id, body) values ($1, 'x')`, [raiz])))
+const adminPost = (await as(A, `insert into posts (group_id, body) values ($1, 'Ensayo el sábado') returning id`, [raiz]))[0].id
+check('un admin publica', !!adminPost)
+check('un miembro no sube fotos al muro', !!(await asErr(H, `insert into storage.objects (bucket_id, name) values ('wall', $1)`, [`${raiz}/${adminPost}/a.jpg`])))
+check('un admin sí', (await as(A, `insert into storage.objects (bucket_id, name) values ('wall', $1) returning id`, [`${raiz}/${adminPost}/a.jpg`])).length === 1)
+check('un miembro ve la publicación', (await as(H, `select id from posts where id=$1`, [adminPost])).length === 1)
+check('un miembro no comenta', !!(await asErr(H, `insert into post_comments (post_id, body) values ($1, 'x')`, [adminPost])))
+check('un admin comenta', (await as(A, `insert into post_comments (post_id, body) values ($1, 'Traed agua') returning id`, [adminPost])).length === 1)
+check('un miembro reacciona', (await as(H, `insert into post_reactions (post_id, user_id, emoji) values ($1, $2, '🔥') returning emoji`, [adminPost, H])).length === 1)
+check('lo ya publicado por un miembro se queda', (await one(`select count(*)::int n from posts where id=$1`, [hPost])).n === 1)
+check('y su autor aún lo borra', (await as(H, `delete from posts where id=$1 returning id`, [hPost])).length === 1)
+
+console.log('Chat del grupo')
+const say = (uid, group, body) => as(uid, `insert into chat_messages (group_id, body, author_id) values ($1, $2, $3) returning *`, [group, body, A])
+const msg = (await say(H, raiz, '  ¿Quién trae el surdo?  '))[0]
+check('un miembro escribe (autoría y texto recortado)', msg.author_id === H && msg.body === '¿Quién trae el surdo?')
+check('el grupo lo ve', (await as(I, `select id from chat_messages where id=$1`, [msg.id])).length === 1)
+check('otro grupo no lo ve', (await as(C, `select id from chat_messages`)).length === 0)
+check('no escribe en un grupo ajeno', !!(await asErr(C, `insert into chat_messages (group_id, body) values ($1, 'x')`, [raiz])))
+check('rechazada no escribe', !!(await asErr(D, `insert into chat_messages (group_id, body) values ($1, 'x')`, [brote])))
+check('un admin escribe en cualquier grupo', (await as(A, `insert into chat_messages (group_id, body) values ($1, 'Hola') returning id`, [brote])).length === 1)
+check('mensaje demasiado largo rechazado', !!(await asErr(H, `insert into chat_messages (group_id, body) values ($1, $2)`, [raiz, 'x'.repeat(2001)])))
+check('no se edita', (await as(H, `update chat_messages set body='editado' where id=$1 returning id`, [msg.id])).length === 0)
+const chatPath = `${raiz}/${msg.id}/a.jpg`
+check('sube la foto al bucket del chat', (await as(H, `insert into storage.objects (bucket_id, name) values ('chat', $1) returning id`, [chatPath])).length === 1)
+check('otro grupo no sube al chat', !!(await asErr(C, `insert into storage.objects (bucket_id, name) values ('chat', $1)`, [`${raiz}/${msg.id}/b.jpg`])))
+check('foto del mensaje (grupo heredado)', (await as(H, `insert into chat_photos (message_id, path, width, height, group_id) values ($1, $2, 10, 10, $3) returning group_id`, [msg.id, chatPath, brote]))[0].group_id === raiz)
+check('no añade fotos a mensajes ajenos', !!(await asErr(I, `insert into chat_photos (message_id, path, width, height) values ($1, $2, 10, 10)`, [msg.id, `${raiz}/${msg.id}/c.jpg`])))
+check('foto con ruta de otro grupo rechazada', !!(await asErr(H, `insert into chat_photos (message_id, path, width, height) values ($1, $2, 10, 10)`, [msg.id, `${brote}/${msg.id}/d.jpg`])))
+check('el grupo ve la foto', (await as(I, `select * from chat_photos`)).length === 1 && (await as(I, `select * from storage.objects where bucket_id='chat'`)).length === 1)
+check('otro grupo no ve la foto', (await as(C, `select * from chat_photos`)).length === 0 && (await as(C, `select * from storage.objects where bucket_id='chat'`)).length === 0)
+check('otra persona no borra un mensaje ajeno', (await as(I, `delete from chat_messages where id=$1 returning id`, [msg.id])).length === 0)
+const msg2 = (await say(I, raiz, 'Yo'))[0]
+check('quien lo escribió lo borra', (await as(I, `delete from chat_messages where id=$1 returning id`, [msg2.id])).length === 1)
+const chatFiles = (await as(H, `select account_chat_files($1) f`, [H]))[0].f
+check('archivos del chat de una cuenta (foto + miniatura)', chatFiles.length === 2 && chatFiles.includes(`${raiz}/${msg.id}/a_t.jpg`))
+check('otra persona no los lista', /No puedes/.test(await asErr(I, `select account_chat_files($1)`, [H])))
+const chatStats = (await as(A, `select admin_stats() s`))[0].s
+check('resumen: mensajes del chat', chatStats.content.messages === 2 && 'chat_bytes' in chatStats.storage)
+check('la coordinación modera el chat', (await as(G, `delete from chat_messages where id=$1 returning id`, [msg.id])).length === 1)
+check('con el mensaje se va su foto', (await one(`select count(*)::int n from chat_photos`)).n === 0)
+await say(H, raiz, 'Adiós')
+await as(A, `select delete_account($1)`, [H])
+check('al borrar la cuenta se van sus mensajes', (await one(`select count(*)::int n from chat_messages where body='Adiós'`)).n === 0)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

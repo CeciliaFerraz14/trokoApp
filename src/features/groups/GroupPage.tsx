@@ -6,6 +6,7 @@ import { Badge, GroupDot } from '@/components/ui/Badge'
 import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList, Spinner } from '@/components/ui/States'
 import { Tabs } from '@/components/ui/Tabs'
+import { ChatPanel } from '@/features/chat/ChatPanel'
 import { Gallery } from '@/features/wall/Gallery'
 import { WallFeed } from '@/features/wall/WallFeed'
 import { useGallery, useWallRealtime } from '@/features/wall/api'
@@ -14,7 +15,7 @@ import { useMe } from '@/features/auth/useMe'
 import { InviteCard } from './InviteCard'
 import { displayName, useGroup, useGroupMembers } from './api'
 
-type Tab = 'muro' | 'galeria' | 'miembros'
+type Tab = 'muro' | 'chat' | 'galeria' | 'miembros'
 
 export function GroupPage() {
   const { groupId } = useParams()
@@ -69,12 +70,15 @@ export function GroupPage() {
           onChange={(t) => setParams({ tab: t }, { replace: true })}
           options={[
             { value: 'muro', label: 'Muro' },
+            { value: 'chat', label: 'Chat' },
             { value: 'galeria', label: 'Galería' },
             { value: 'miembros', label: 'Miembros' },
           ]}
         />
         {tab === 'muro' ? (
           <WallFeed groupId={g.id} groupName={g.name} />
+        ) : tab === 'chat' ? (
+          <ChatPanel groupId={g.id} groupName={g.name} />
         ) : tab === 'galeria' ? (
           <Gallery groupId={g.id} />
         ) : (

@@ -14,7 +14,9 @@ export function WallFeed({ groupId, groupName }: { groupId: string; groupName: s
   const { data: me } = useMe()
   const wall = useWall(groupId)
   const posts = wall.data?.pages.flat() ?? []
-  const canPost = !!me && (me.isAdmin || me.memberships.some((m) => m.group.id === groupId))
+  const isMember = !!me && (me.isAdmin || me.memberships.some((m) => m.group.id === groupId))
+  // En el muro publican los admins; el resto del grupo lo ve y reacciona
+  const canPost = !!me?.isAdmin
 
   // Lo que se ve aquí deja de contar como novedad (también lo que llega en tiempo real)
   const newest = posts[0]?.created_at
@@ -42,7 +44,7 @@ export function WallFeed({ groupId, groupName }: { groupId: string; groupName: s
         </Link>
       )}
 
-      {!canPost ? (
+      {!isMember ? (
         // Aún no es del grupo: el muro es privado, puede pedir entrar
         <EmptyState icon={<Lock className="size-8" />} title="Aún no estás en este grupo" action={<JoinRequestButton groupId={groupId} groupName={groupName} />}>
           El muro solo lo ven las personas de {groupName}. Pide entrar y un admin revisará tu solicitud.
@@ -53,7 +55,9 @@ export function WallFeed({ groupId, groupName }: { groupId: string; groupName: s
         <ErrorState error={wall.error} onRetry={() => wall.refetch()} />
       ) : !posts.length ? (
         <EmptyState icon={<MessageSquareHeart className="size-8" />} title="El muro está vacío">
-          Sé la primera persona en compartir una foto, un vídeo o unas palabras con el grupo.
+          {canPost
+            ? 'Comparte una foto, un vídeo o unas palabras con el grupo.'
+            : 'Aquí verás lo que publiquen los admins. Para hablar con el grupo, usa el chat.'}
         </EmptyState>
       ) : (
         <>

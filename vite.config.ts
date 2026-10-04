@@ -44,9 +44,9 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
-            // Fotos del muro (bucket privado): las URLs firmadas cambian de token,
-            // así que se cachean por ruta ignorando la query. Se borra al cerrar sesión.
-            urlPattern: ({ url }) => url.pathname.startsWith('/storage/v1/object/sign/wall/'),
+            // Fotos del muro y del chat (buckets privados): las URLs firmadas cambian de
+            // token, así que se cachean por ruta ignorando la query. Se borra al cerrar sesión.
+            urlPattern: ({ url }) => /^\/storage\/v1\/object\/sign\/(wall|chat)\//.test(url.pathname),
             handler: 'CacheFirst',
             options: {
               cacheName: 'wall-photos',

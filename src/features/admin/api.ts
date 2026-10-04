@@ -174,6 +174,12 @@ export async function deleteAccount(userId: string) {
     const { error: e2 } = await supabase.storage.from('wall').remove(files)
     if (e2) throw e2
   }
+  const { data: chatFiles, error: e4 } = await supabase.rpc('account_chat_files', { p_user: userId })
+  if (e4) throw e4
+  if (chatFiles?.length) {
+    const { error: e5 } = await supabase.storage.from('chat').remove(chatFiles)
+    if (e5) throw e5
+  }
   // Puede no tener avatar: si no existe, Storage no da error
   await supabase.storage.from('avatars').remove([`${userId}/avatar.jpg`])
   const { error: e3 } = await supabase.rpc('delete_account', { p_user: userId })

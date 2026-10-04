@@ -35,6 +35,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0010_disable_invite_codes.sql` | Desactiva los códigos de invitación: todo pasa por la aprobación de un admin |
 | `supabase/migrations/0011_push.sql` | Notificaciones push (muro, aceptación en grupos, cuenta aprobada). Ver *Notificaciones* abajo |
 | `supabase/migrations/0012_announcement_media.sql` | Fotos y enlaces en los avisos, y su notificación push |
+| `supabase/migrations/0013_wall_admins_chat.sql` | El muro pasa a ser solo de admins (el resto reacciona) y cada grupo tiene un chat con fotos (bucket privado `chat`) |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -98,10 +99,10 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Sin códigos de invitación**: toda cuenta nueva la aprueba un admin, y para entrar en un grupo se pide acceso (ver abajo). Para invitar a alguien se comparte el enlace de registro (*Admin → Grupos → grupo* o, para la coordinación, *Muro → grupo → Miembros*). Los códigos de la fase 1 están desactivados en la base de datos (migración 0010).
 - **Roles**:
   - **Admin**: gestiona todo.
-  - **Coordinador/a**: por grupo. Publica avisos y eventos para sus grupos y modera su muro.
+  - **Coordinador/a**: por grupo. Publica avisos y eventos para sus grupos y modera su muro y su chat.
   - **Miembro**.
 - **Contraseña olvidada**: mientras no haya un servidor de correo configurado, un admin la restablece en *Admin → Personas → persona → Restablecer contraseña*: la app genera una contraseña temporal (p. ej. `surdo-caixa-4821`) y un mensaje para copiar y enviar. Después la persona puede cambiarla en *Perfil → Cambiar contraseña*. (`supabase/reset_password.sql` sigue sirviendo si hiciera falta hacerlo desde Supabase.)
-- **Borrar una cuenta**: cada persona puede borrar la suya en *Perfil → Borrar mi cuenta*, y un admin cualquiera desde su ficha. Se borran el perfil, sus publicaciones, fotos y comentarios del muro, su asistencia y sus notas; los avisos y eventos que creó se mantienen. La última cuenta admin no se puede borrar.
+- **Borrar una cuenta**: cada persona puede borrar la suya en *Perfil → Borrar mi cuenta*, y un admin cualquiera desde su ficha. Se borran el perfil, sus publicaciones, fotos y comentarios del muro, sus mensajes y fotos del chat, su asistencia y sus notas; los avisos y eventos que creó se mantienen. La última cuenta admin no se puede borrar.
 - **Resumen** (*Admin → Resumen*): personas, contenido y cuánto se ha usado del plan gratuito de Supabase (fotos y base de datos).
 - **Orden de los grupos**: en *Admin → Grupos*, con las flechas ↑↓. Es el orden en que salen en toda la app; un grupo nuevo va al final.
 - **Entrar en otros grupos**: en *Muro* cada persona ve todos los grupos. En los que no está puede pulsar **Solicitar acceso** (también desde dentro del grupo); un admin la acepta o rechaza en *Admin → Pendientes*. Mientras tanto no ve el muro de ese grupo. Si se rechaza, lo ve y puede volver a pedirlo.
@@ -128,12 +129,13 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 
 ## 7d. Muro de grupos
 
-- Cada grupo tiene su **muro** (pestaña *Muro* → grupo): lo ven y escriben solo sus miembros (y los admins).
+- Cada grupo tiene su **muro** (pestaña *Muro* → grupo): lo ven solo sus miembros (y los admins). **Publican y comentan solo los admins**; el resto del grupo lo ve y reacciona. Lo publicado antes de este cambio se queda, y quien lo escribió aún puede editarlo o borrarlo.
 - **Publicaciones**: texto, hasta 6 fotos y un enlace de vídeo o música (YouTube, Instagram, TikTok o Spotify; los vídeos no se suben). Los enlaces de Spotify se ven como reproductor dentro de la publicación. Quien publica puede editar el texto.
 - **Fotos**: se reducen en el móvil (1600 px + miniatura de 640 px) y se guardan en el bucket **privado** `wall`: solo las ven las personas del grupo, mediante enlaces temporales. Pestaña **Galería** con todas las fotos del grupo.
 - **Comentarios y reacciones** (👏 ❤️ 😂 🥁 🔥, una por persona).
 - **Moderación**: la coordinación del grupo y los admins pueden borrar publicaciones y comentarios. Al borrar una publicación se borran también sus fotos.
 - **Tiempo real**: lo nuevo aparece sin recargar mientras el grupo está abierto.
+- **Chat** (pestaña *Chat* del grupo): escribe cualquier persona del grupo (y los admins). Texto con enlaces pulsables y hasta 6 fotos por mensaje, en el bucket **privado** `chat` (solo las ve el grupo; no salen en la Galería). Los mensajes no se editan; tocando un mensaje, quien lo escribió, la coordinación del grupo o un admin pueden borrarlo. Los mensajes del chat no envían notificaciones push.
 
 ## 7e. Notificaciones
 
@@ -187,4 +189,5 @@ src/
 - [x] **4. Muro de grupos**: publicaciones, fotos, comentarios, reacciones, galería, tiempo real.
 - [x] **5. Admin completo y pulido general**: resumen y uso del plan, contraseñas y borrado de cuentas desde la app, código de invitación para la coordinación, novedades del muro, próximo evento en Avisos, pantalla de error y carga diferida de pantallas.
 - [x] **Notificaciones push** (muro, avisos, aceptación en grupos, cuenta aprobada).
+- [x] **Muro solo de admins y chat de grupo**.
 - [ ] **Más adelante**: encuestas, repositorio de material.

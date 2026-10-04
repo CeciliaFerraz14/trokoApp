@@ -133,6 +133,8 @@ function Comments({ post, canModerate }: { post: WallPost; canModerate: boolean 
   const remove = useDeleteComment()
   const toast = useToast()
   const [body, setBody] = useState('')
+  // Comentan los admins; el resto los lee
+  const canComment = !!me?.isAdmin
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
@@ -142,6 +144,8 @@ function Comments({ post, canModerate }: { post: WallPost; canModerate: boolean 
       { onSuccess: () => setBody(''), onError: (err) => toast(errorMessage(err), 'error') },
     )
   }
+
+  if (!canComment && comments.data?.length === 0) return null
 
   return (
     <section>
@@ -183,20 +187,22 @@ function Comments({ post, canModerate }: { post: WallPost; canModerate: boolean 
           })}
         </ul>
       )}
-      <form onSubmit={onSubmit} className="flex items-end gap-2">
-        <TextArea
-          label="Escribe un comentario"
-          className="flex-1 [&_label]:sr-only"
-          rows={1}
-          maxLength={2000}
-          placeholder="Escribe un comentario…"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
-        <Button type="submit" aria-label="Enviar comentario" loading={add.isPending} disabled={!body.trim()} className="size-11 shrink-0 px-0">
-          {!add.isPending && <SendHorizontal className="size-5" />}
-        </Button>
-      </form>
+      {canComment && (
+        <form onSubmit={onSubmit} className="flex items-end gap-2">
+          <TextArea
+            label="Escribe un comentario"
+            className="flex-1 [&_label]:sr-only"
+            rows={1}
+            maxLength={2000}
+            placeholder="Escribe un comentario…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          />
+          <Button type="submit" aria-label="Enviar comentario" loading={add.isPending} disabled={!body.trim()} className="size-11 shrink-0 px-0!">
+            {!add.isPending && <SendHorizontal className="size-5" />}
+          </Button>
+        </form>
+      )}
     </section>
   )
 }

@@ -3,6 +3,7 @@ import { MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { formatWhen } from '@/lib/dates'
 import { Avatar } from '@/components/ui/Avatar'
+import { useMe } from '@/features/auth/useMe'
 import { Linkify } from '@/components/ui/Linkify'
 import { displayName } from '@/features/groups/api'
 import type { WallPost } from './api'
@@ -15,6 +16,9 @@ import { parseVideo } from './video'
 export function PostCard({ post, detail = false }: { post: WallPost; detail?: boolean }) {
   const href = `/muro/${post.group_id}/p/${post.id}`
   const video = parseVideo(post.video_url)
+  const { data: me } = useMe()
+  // Solo los admins comentan: al resto se le enseña el enlace si hay comentarios
+  const showComments = !detail && (post.commentCount > 0 || !!me?.isAdmin)
   return (
     <article className="space-y-3 rounded-2xl border border-line bg-surface p-4">
       <header className="flex items-center gap-3">
@@ -38,7 +42,7 @@ export function PostCard({ post, detail = false }: { post: WallPost; detail?: bo
       {video && <VideoPreview video={video} />}
       <footer className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <ReactionBar post={post} />
-        {!detail && (
+        {showComments && (
           <Link to={href} className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-2 text-sm font-semibold text-muted hover:text-fg">
             <MessageSquare className="size-4" aria-hidden />
             {post.commentCount ? `${post.commentCount} ${post.commentCount === 1 ? 'comentario' : 'comentarios'}` : 'Comentar'}
