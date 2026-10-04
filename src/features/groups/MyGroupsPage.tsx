@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { BellRing, ChevronRight, UsersRound, X } from 'lucide-react'
+import { BellRing, ChevronRight, MessageCircle, UsersRound, X } from 'lucide-react'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { SectionTitle } from '@/components/ui/Card'
 import { EmptyState, SkeletonList } from '@/components/ui/States'
 import { Badge } from '@/components/ui/Badge'
 import { useMe } from '@/features/auth/useMe'
 import { useWallNews } from '@/features/wall/news'
+import { useChatUnread } from '@/features/chat/unread'
 import { PushEnableButton } from '@/components/ui/PushToggle'
 import { usePush } from '@/lib/push'
 import { useGroups } from './api'
@@ -17,6 +18,7 @@ export function MyGroupsPage() {
   const { data: me } = useMe()
   const memberships = me?.memberships ?? []
   const news = useWallNews()
+  const chatUnread = useChatUnread().data ?? {}
   const groups = useGroups()
   const mine = new Set(memberships.map((m) => m.group.id))
   const others = (groups.data ?? []).filter((g) => !mine.has(g.id))
@@ -44,6 +46,13 @@ export function MyGroupsPage() {
                     {group.schedule && <p className="truncate text-sm text-muted">{group.schedule}</p>}
                   </div>
                   {news.has(group.id) && <Badge tone="warning">Novedades</Badge>}
+                  {!!chatUnread[group.id] && (
+                    <Badge tone="brand" className="shrink-0">
+                      <MessageCircle className="size-3.5" aria-hidden />
+                      {chatUnread[group.id] > 99 ? '99+' : chatUnread[group.id]}
+                      <span className="sr-only"> sin leer en el chat</span>
+                    </Badge>
+                  )}
                   {role === 'coordinator' && <Badge tone="brand">Coordinas</Badge>}
                   <ChevronRight className="size-5 text-muted" />
                 </Link>

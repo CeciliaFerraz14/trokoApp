@@ -19,7 +19,7 @@ export function TabBar({
   isAdmin: boolean
   pendingCount?: number
   unreadCount?: number
-  /** Grupos con publicaciones nuevas */
+  /** Grupos con publicaciones nuevas más mensajes del chat sin leer */
   wallNews?: number
 }) {
   const tabs: Tab[] = [

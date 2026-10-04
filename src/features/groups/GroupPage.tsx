@@ -6,6 +6,7 @@ import { Badge, GroupDot } from '@/components/ui/Badge'
 import { HeaderLink, Page, PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState, ErrorState, SkeletonList, Spinner } from '@/components/ui/States'
 import { Tabs } from '@/components/ui/Tabs'
+import { useChatUnread } from '@/features/chat/unread'
 import { ChatPanel } from '@/features/chat/ChatPanel'
 import { Gallery } from '@/features/wall/Gallery'
 import { WallFeed } from '@/features/wall/WallFeed'
@@ -29,6 +30,7 @@ export function GroupPage() {
   const members = useGroupMembers(groupId)
   const gallery = useGallery(groupId)
   const events = useEvents(startOfToday())
+  const chatUnread = useChatUnread().data ?? {}
 
   if (group.isPending) return <><PageHeader title="Grupo" back /><Spinner /></>
   if (group.isError) return <><PageHeader title="Grupo" back /><ErrorState error={group.error} onRetry={() => group.refetch()} /></>
@@ -70,7 +72,8 @@ export function GroupPage() {
           onChange={(t) => setParams({ tab: t }, { replace: true })}
           options={[
             { value: 'muro', label: 'Muro' },
-            { value: 'chat', label: 'Chat' },
+            // Mientras se está en el chat no hace falta el número (se marca como leído)
+            { value: 'chat', label: 'Chat', count: tab === 'chat' ? 0 : (chatUnread[g.id] ?? 0) },
             { value: 'galeria', label: 'Galería' },
             { value: 'miembros', label: 'Miembros' },
           ]}

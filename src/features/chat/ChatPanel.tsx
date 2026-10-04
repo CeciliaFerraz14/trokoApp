@@ -16,6 +16,7 @@ import { displayName } from '@/features/groups/api'
 import { JoinRequestButton } from '@/features/groups/JoinRequestButton'
 import { PhotoGrid } from '@/features/wall/PhotoGrid'
 import { useChat, useChatRealtime, useDeleteMessage, useSendMessage, type ChatItem } from './api'
+import { useMarkChatRead } from './unread'
 
 /** Chat del grupo: escribe cualquier persona del grupo (texto, enlaces y fotos) */
 export function ChatPanel({ groupId, groupName }: { groupId: string; groupName: string }) {
@@ -46,6 +47,7 @@ function Chat({ groupId }: { groupId: string }) {
 
   // Al abrir y con cada mensaje nuevo, baja hasta el final (cargar anteriores no mueve nada)
   const newest = messages[messages.length - 1]?.id
+  useMarkChatRead(groupId, newest)
   const scrolled = useRef(false)
   useEffect(() => {
     if (!newest || !composerHeight) return

@@ -458,6 +458,8 @@ export type Database = {
       push_public_key: { Args: Record<string, never>; Returns: string | null }
       save_push_subscription: { Args: { p_endpoint: string; p_p256dh: string; p_auth: string; p_user_agent?: string }; Returns: undefined }
       delete_push_subscription: { Args: { p_endpoint: string }; Returns: undefined }
+      mark_chat_read: { Args: { p_group: string }; Returns: undefined }
+      my_chat_unread: { Args: Record<string, never>; Returns: { group_id: string; unread: number }[] }
     }
     Enums: {
       app_role: AppRole

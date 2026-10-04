@@ -5,6 +5,7 @@ import { useMe } from '@/features/auth/useMe'
 import { useJoinRequests, usePendingUsers } from '@/features/admin/api'
 import { useUnreadCount } from '@/features/announcements/api'
 import { useWallNews } from '@/features/wall/news'
+import { useChatUnreadRealtime, useChatUnreadTotal } from '@/features/chat/unread'
 import { cn } from '@/lib/cn'
 import { TabBar } from './TabBar'
 import { OfflineBanner } from './OfflineBanner'
@@ -20,6 +21,8 @@ export function AppShell() {
   const requests = useJoinRequests({ enabled: isAdmin })
   const unread = useUnreadCount()
   const wallNews = useWallNews()
+  const chatUnread = useChatUnreadTotal()
+  useChatUnreadRealtime()
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -32,7 +35,7 @@ export function AppShell() {
         </ErrorBoundary>
       </main>
       <OfflineBanner />
-      {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size} />}
+      {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size + chatUnread} />}
     </div>
   )
 }
