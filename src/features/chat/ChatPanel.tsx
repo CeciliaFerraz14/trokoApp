@@ -53,6 +53,26 @@ function Chat({ groupId }: { groupId: string }) {
     scrolled.current = true
   }, [newest, composerHeight])
 
+  // Si se estaba al final, se sigue al final cuando la pantalla encoge (al abrir el teclado)
+  useEffect(() => {
+    const root = document.documentElement
+    let atEnd = true
+    const onScroll = () => {
+      atEnd = root.scrollHeight - window.scrollY - window.innerHeight < 80
+    }
+    const onResize = () => {
+      if (atEnd) window.scrollTo({ top: root.scrollHeight })
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onResize)
+    window.visualViewport?.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onResize)
+      window.visualViewport?.removeEventListener('resize', onResize)
+    }
+  }, [])
+
   const onDelete = (m: ChatItem) => {
     if (!confirm('¿Borrar este mensaje?')) return
     remove.mutate(m, {
@@ -195,7 +215,7 @@ function useKeyboardInset() {
   return inset
 }
 
-/** Caja para escribir, fija abajo: encima de la barra de navegación o del teclado */
+/** Caja para escribir, fija abajo del todo (o encima del teclado) */
 function Composer({ groupId, onHeight }: { groupId: string; onHeight: (height: number) => void }) {
   const send = useSendMessage()
   const keyboard = useKeyboardInset()
@@ -245,8 +265,8 @@ function Composer({ groupId, onHeight }: { groupId: string; onHeight: (height: n
   return (
     <div
       className="fixed inset-x-0 z-20 px-safe"
-      // Sin teclado: justo encima de la barra de navegación (4.75rem + safe area)
-      style={{ bottom: keyboard ? keyboard + 8 : 'calc(5.25rem + env(safe-area-inset-bottom))' }}
+      // En el chat no hay barra de navegación (AppShell): abajo del todo o encima del teclado
+      style={{ bottom: keyboard ? keyboard + 8 : 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
       <form
         ref={box}
