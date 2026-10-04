@@ -3,7 +3,7 @@ import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { IconButton } from '@/components/ui/Button'
-import { CATEGORIES } from './categories'
+import { categoryOf } from './categories'
 import type { EventItem } from './api'
 
 const WEEK = { weekStartsOn: 1 as const }
@@ -84,7 +84,7 @@ export function MonthView({
                   <span
                     key={e.id}
                     className={cn('size-1.5 rounded-full', isSelected && 'ring-1 ring-brand-black')}
-                    style={{ backgroundColor: CATEGORIES[e.category].color }}
+                    style={{ backgroundColor: categoryOf(e.category).color }}
                   />
                 ))}
               </span>

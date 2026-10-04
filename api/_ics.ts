@@ -19,10 +19,11 @@ export const TIMEZONE = 'Europe/Madrid'
 
 const CATEGORY_LABELS: Record<string, string> = {
   class: 'Clase',
-  rehearsal: 'Ensayo',
+  no_class: 'No hay clase',
+  event: 'Evento',
+  workshop: 'Talleres especiales',
   gig: 'Bolo',
   festival: 'Festival',
-  meeting: 'Reunión',
   social: 'Quedada',
   other: 'Otro',
 }

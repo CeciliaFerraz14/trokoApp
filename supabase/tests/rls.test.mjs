@@ -572,5 +572,19 @@ const joinedPush = (await as(null, `select push_prepare('s3cret', 'group_joined'
 check('los demás avisos siguen con su etiqueta propia y sin volver a sonar', joinedPush.tag === `group_joined-${raiz}-${I}` && joinedPush.renotify === false)
 check('nadie llama push_on_chat por la API', !!(await asErr(F, `select push_on_chat()`)))
 
+console.log('Tipos de evento (0015)')
+// Antes de migrar: un ensayo y una reunión que deben recolocarse
+const oldRehearsal = (await as(A, `insert into events (title, starts_at, category) values ('Ensayo viejo', now(), 'rehearsal') returning id`))[0].id
+const oldMeeting = (await as(A, `insert into events (title, starts_at, category) values ('Reunión vieja', now(), 'meeting') returning id`))[0].id
+await db.exec(readFileSync(`${ROOT}/migrations/0015_event_categories.sql`, 'utf8'))
+const cats = (await one(`select enum_range(null::event_category)::text[] r`)).r
+check('tipos nuevos, sin ensayo ni reunión', ['class', 'no_class', 'event', 'workshop', 'gig', 'festival', 'social', 'other'].every((c) => cats.includes(c)) && !cats.includes('rehearsal') && !cats.includes('meeting'))
+check('un ensayo existente pasa a clase', (await one(`select category from events where id=$1`, [oldRehearsal])).category === 'class')
+check('una reunión existente pasa a otro', (await one(`select category from events where id=$1`, [oldMeeting])).category === 'other')
+for (const c of ['no_class', 'event', 'workshop']) {
+  check(`se crea un evento de tipo ${c}`, (await as(A, `insert into events (title, starts_at, category) values ('x', now(), $1) returning category`, [c]))[0]?.category === c)
+}
+check('ya no se puede usar "ensayo"', !!(await asErr(A, `insert into events (title, starts_at, category) values ('x', now(), 'rehearsal')`)))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

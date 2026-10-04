@@ -5,7 +5,7 @@
 export type AppRole = 'admin' | 'member'
 export type AccountStatus = 'pending' | 'active' | 'rejected'
 export type GroupRole = 'member' | 'coordinator'
-export type EventCategory = 'class' | 'rehearsal' | 'gig' | 'festival' | 'meeting' | 'social' | 'other'
+export type EventCategory = 'class' | 'no_class' | 'event' | 'workshop' | 'gig' | 'festival' | 'social' | 'other'
 export type AttendanceStatus = 'yes' | 'maybe' | 'no'
 
 export type Profile = {

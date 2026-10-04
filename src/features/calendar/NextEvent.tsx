@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 import { errorMessage } from '@/lib/errors'
 import { formatEventTime } from '@/lib/dates'
 import { useToast } from '@/components/ui/Toast'
-import { CATEGORIES } from './categories'
+import { categoryOf } from './categories'
 import { useEvents, useSetAttendance } from './api'
 
 const WEEK_MS = 1000 * 60 * 60 * 24 * 7
@@ -23,7 +23,7 @@ export function NextEvent() {
     (e) => !e.cancelled && new Date(e.ends_at ?? e.starts_at).getTime() >= now && new Date(e.starts_at).getTime() - now < WEEK_MS,
   )
   if (!next) return null
-  const cat = CATEGORIES[next.category]
+  const cat = categoryOf(next.category)
   const going = next.myStatus === 'yes'
 
   const toggle = () =>

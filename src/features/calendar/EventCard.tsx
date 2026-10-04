@@ -5,7 +5,7 @@ import { formatEventTime } from '@/lib/dates'
 import { Badge } from '@/components/ui/Badge'
 import { Audience } from '@/features/groups/audience'
 import type { AttendanceStatus, Group } from '@/types/database'
-import { CATEGORIES } from './categories'
+import { categoryOf } from './categories'
 import type { EventItem } from './api'
 
 export const STATUS_UI: Record<AttendanceStatus, { label: string; short: string; icon: typeof CircleCheck; tone: 'success' | 'warning' | 'neutral' }> = {
@@ -15,7 +15,7 @@ export const STATUS_UI: Record<AttendanceStatus, { label: string; short: string;
 }
 
 export function EventCard({ event, groups }: { event: EventItem; groups: Map<string, Group> }) {
-  const cat = CATEGORIES[event.category]
+  const cat = categoryOf(event.category)
   const Icon = cat.icon
   const status = event.myStatus ? STATUS_UI[event.myStatus] : null
   return (

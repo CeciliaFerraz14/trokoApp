@@ -16,7 +16,7 @@ import { useMe } from '@/features/auth/useMe'
 import { displayName } from '@/features/groups/api'
 import { Audience, canManageAudience, useGroupMap } from '@/features/groups/audience'
 import type { AttendanceStatus } from '@/types/database'
-import { CATEGORIES } from './categories'
+import { categoryOf } from './categories'
 import { STATUS_UI } from './EventCard'
 import {
   icsUrl,
@@ -56,7 +56,7 @@ export function EventDetailPage() {
     )
   }
 
-  const cat = CATEGORIES[e.category]
+  const cat = categoryOf(e.category)
   const canManage = canManageAudience(me, e.group_ids)
 
   const toggleCancel = () => {
