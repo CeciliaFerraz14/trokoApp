@@ -734,5 +734,28 @@ check('miembros activos ven los archivos', (await as(Q, `select name from storag
 check('una cuenta pendiente no', (await as(T, `select name from storage.objects where bucket_id = 'trokoteca'`)).length === 0)
 check('al borrar la cuenta se borran sus pedidos', !(await asErr(A, `select delete_account($1)`, [Q])) && !(await one(`select 1 x from merch_orders where user_id=$1`, [Q])))
 
+console.log('Notificación de pedidos (0020)')
+await db.exec(readFileSync(`${ROOT}/migrations/0020_merch_order_push.sql`, 'utf8'))
+const A2 = await signup('a2@troko.es', { full_name: 'Alba Admin' })
+await as(A, `select approve_user($1, $2)`, [A2, []])
+await as(A, `update profiles set role = 'admin' where id=$1`, [A2])
+for (const [u, ep] of [[A, 'adm-a'], [A2, 'adm-a2'], [S, 'mem-s'], [R, 'mem-r']]) await as(u, `select save_push_subscription($1, 'k', 'a')`, [`https://push.example/${ep}`])
+const cap = (await as(A, `insert into merch_products (name, price_cents) values ('Gorra', 1000) returning id`))[0]
+await db.exec(`delete from net.calls`)
+const sOrder = (await as(S, `insert into merch_orders (product_id, quantity) values ($1, 3) returning id`, [cap.id]))[0]
+check('un pedido nuevo envía la notificación', (await calls()).some((c) => c.kind === 'merch_order' && c.id1 === sOrder.id))
+const oPush = (await as(null, `select push_prepare('s3cret', 'merch_order', $1) p`, [sOrder.id], 'anon'))[0].p
+const eps = oPush.subscriptions.map((x) => x.endpoint.split('/').pop()).sort().join()
+check('dice quién y qué ha pedido y abre Pedidos', oPush.title === 'Nuevo pedido de merch' && oPush.body === 'Sara: 3 × Gorra' && oPush.url === '/trokoteca/pedidos')
+check('llega solo a los admins', eps === 'adm-a,adm-a2', eps)
+const aOrder = (await as(A, `insert into merch_orders (product_id, quantity) values ($1, 1) returning id`, [cap.id]))[0]
+const aEps = (await as(null, `select push_prepare('s3cret', 'merch_order', $1) p`, [aOrder.id], 'anon'))[0].p.subscriptions.map((x) => x.endpoint.split('/').pop()).join()
+check('si pide un admin, no le llega a él', aEps === 'adm-a2', aEps)
+await db.exec(`delete from net.calls`)
+await as(A, `update merch_orders set status = 'ready' where id=$1`, [sOrder.id])
+await as(A, `update merch_orders set status = 'cancelled' where id=$1`, [aOrder.id])
+check('cambiar el estado no avisa a nadie', !(await calls()).some((c) => c.kind === 'merch_order'))
+check('los demás avisos siguen funcionando', (await as(null, `select push_prepare('s3cret', 'announcement', $1) p`, [aAnn], 'anon'))[0].p?.title?.length > 0)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

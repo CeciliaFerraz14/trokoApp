@@ -1,6 +1,7 @@
 // Envía notificaciones push: POST /api/push {kind, id1, id2}
 // La llama la base de datos (pg_net) al publicar en un muro o en un aviso, con
-// cada mensaje del chat, al entrar en un grupo o al aprobarse una cuenta. Con el secreto compartido pide a
+// cada mensaje del chat, al entrar en un grupo, al aprobarse una cuenta o con
+// cada pedido de merch (solo a los admins). Con el secreto compartido pide a
 // push_prepare() el mensaje, las suscripciones y las claves VAPID; después
 // envía con web-push y olvida las suscripciones caducadas.
 import webpush from 'web-push'
