@@ -74,6 +74,16 @@ export type Birthday = {
   updated_at: string
 }
 
+/** Usuario de Instagram: lo ve su dueño/a y, si da permiso para etiquetarle, los admins */
+export type Instagram = {
+  user_id: string
+  /** Sin @, en minúsculas */
+  username: string
+  /** Permiso para etiquetarle en las publicaciones de Troko Bloco */
+  tag_consent: boolean
+  updated_at: string
+}
+
 export type AnnouncementPhoto = {
   id: string
   announcement_id: string
@@ -254,6 +264,12 @@ export type Database = {
         Insert: { user_id?: string; birth_date: string; share: boolean }
         Update: Partial<Pick<Birthday, 'birth_date' | 'share'>>
         Relationships: [Rel<'birthdays_user_id_fkey', 'user_id', 'profiles'>]
+      }
+      instagram: {
+        Row: Instagram
+        Insert: { user_id?: string; username: string; tag_consent: boolean }
+        Update: Partial<Pick<Instagram, 'username' | 'tag_consent'>>
+        Relationships: [Rel<'instagram_user_id_fkey', 'user_id', 'profiles'>]
       }
       announcements: {
         Row: Announcement

@@ -12,6 +12,7 @@ import { GroupPage } from '@/features/groups/GroupPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
 import { EditProfilePage } from '@/features/profile/EditProfilePage'
 import { ChangePasswordPage } from '@/features/profile/ChangePasswordPage'
+import { PrivacyPage } from '@/features/profile/PrivacyPage'
 import { InstallPage } from '@/features/install/InstallPage'
 import { EmptyState } from '@/components/ui/States'
 import { AppShell } from './AppShell'
@@ -68,6 +69,7 @@ export function App() {
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/perfil/editar" element={<EditProfilePage />} />
             <Route path="/perfil/contrasena" element={<ChangePasswordPage />} />
+            <Route path="/perfil/privacidad" element={<PrivacyPage />} />
 
             <Route element={<RequireAdmin />}>
               <Route path="/admin" element={<AdminPage />} />

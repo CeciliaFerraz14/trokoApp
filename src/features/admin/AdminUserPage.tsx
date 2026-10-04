@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Ban, Check, Copy, KeyRound, RotateCcw, Trash2 } from 'lucide-react'
+import { AtSign, Ban, Check, Copy, KeyRound, RotateCcw, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/lib/errors'
 import { Avatar } from '@/components/ui/Avatar'
@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
 import { displayName, useGroups } from '@/features/groups/api'
+import { useInstagramOf } from '@/features/profile/instagram'
 import type { GroupRole } from '@/types/database'
 import { tempPassword, useAllUsers, useDeleteAccount, useResetPassword, useSetMembership, useUpdateUserAccount, useUserEmails } from './api'
 
@@ -26,6 +27,7 @@ export function AdminUserPage() {
   const users = useAllUsers()
   const groups = useGroups()
   const emails = useUserEmails()
+  const instagram = useInstagramOf(id)
   const update = useUpdateUserAccount()
   const setMembership = useSetMembership()
   const toast = useToast()
@@ -58,6 +60,18 @@ export function AdminUserPage() {
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-bold">{user.full_name || 'Sin nombre'}</p>
             <p className="truncate text-sm text-muted">{emails.data?.get(user.id)}</p>
+            {instagram.data && (
+              <a
+                href={`https://instagram.com/${instagram.data}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 truncate text-sm font-semibold text-accent"
+                title="Acepta que le etiqueten en Instagram"
+              >
+                <AtSign className="size-4 shrink-0" />
+                {instagram.data}
+              </a>
+            )}
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <Badge tone={statusTone[user.status]}>{statusLabel[user.status]}</Badge>
               <span className="text-xs text-muted">

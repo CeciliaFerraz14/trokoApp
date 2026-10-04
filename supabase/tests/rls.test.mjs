@@ -645,5 +645,32 @@ check('tarea diaria programada', (await one(`select schedule, command from cron.
 check('al borrar la cuenta se borran su fecha y sus felicitaciones', !(await asErr(A, `select delete_account($1)`, [J])) &&
   (await one(`select (select count(*) from birthdays where user_id=$1) + (select count(*) from announcements where birthday_of=$1) n`, [J])).n == 0)
 
+console.log('Instagram (0018)')
+await db.exec(readFileSync(`${ROOT}/migrations/0018_instagram.sql`, 'utf8'))
+const P = await signup('p@troko.es', { full_name: 'Pilar', birth_date: '1995-01-01', instagram: ' @Pilar.Troko_ ', instagram_consent: true })
+const Q = await signup('q@troko.es', { full_name: 'Quique', instagram: 'quique', instagram_consent: false })
+const R = await signup('r@troko.es', { full_name: 'Rosa', instagram: 'no vale!' })
+const S = await signup('s@troko.es', { full_name: 'Sara' })
+for (const u of [P, Q, R, S]) await as(A, `select approve_user($1, $2)`, [u, [raiz]])
+check('al registrarse se guarda sin @ y en minúsculas', (await one(`select username, tag_consent from instagram where user_id=$1`, [P]))?.username === 'pilar.troko_')
+check('el registro sigue guardando el cumpleaños', !!(await one(`select 1 x from birthdays where user_id=$1`, [P])))
+check('sin permiso queda guardado sin permiso', (await one(`select tag_consent from instagram where user_id=$1`, [Q]))?.tag_consent === false)
+check('un usuario no válido no impide crear la cuenta', !!(await one(`select 1 x from profiles where id=$1`, [R])) && !(await one(`select 1 x from instagram where user_id=$1`, [R])))
+check('sin Instagram no se guarda nada', !(await one(`select 1 x from instagram where user_id=$1`, [S])))
+check('cada cual ve el suyo aunque no dé permiso', (await as(Q, `select username from instagram`)).map((r) => r.username).join() === 'quique')
+check('un admin ve el de quien da permiso', (await as(A, `select username from instagram where user_id=$1`, [P])).length === 1)
+check('pero no el de quien no lo da', (await as(A, `select username from instagram where user_id=$1`, [Q])).length === 0)
+check('el resto no ve el de nadie', (await as(G, `select * from instagram`)).length === 0 && (await as(S, `select * from instagram`)).length === 0)
+check('se puede añadir después', (await as(S, `insert into instagram (username, tag_consent) values ('Sara_bloco', true) returning user_id, username`))[0]?.username === 'sara_bloco')
+check('y dar o quitar el permiso', (await as(Q, `update instagram set tag_consent = true where user_id=$1 returning tag_consent`, [Q]))[0]?.tag_consent === true &&
+  (await as(A, `select 1 from instagram where user_id=$1`, [Q])).length === 1)
+check('no se puede cambiar el de otra persona', (await as(Q, `update instagram set username = 'otro' where user_id=$1 returning 1`, [P])).length === 0 &&
+  (await as(A, `update instagram set username = 'otro' where user_id=$1 returning 1`, [P])).length === 0)
+check('ni guardarlo a nombre de otra persona', (await as(R, `insert into instagram (user_id, username) values ($1, 'rosa') returning user_id`, [S]))[0]?.user_id === R)
+check('usuario no válido rechazado', /no válido/.test(await asErr(Q, `update instagram set username = 'con espacios' where user_id=$1`, [Q])) &&
+  /no válido/.test(await asErr(Q, `update instagram set username = '' where user_id=$1`, [Q])))
+check('se puede borrar', (await as(Q, `delete from instagram where user_id=$1 returning 1`, [Q])).length === 1)
+check('al borrar la cuenta se borra su Instagram', !(await asErr(A, `select delete_account($1)`, [P])) && !(await one(`select 1 x from instagram where user_id=$1`, [P])))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)
