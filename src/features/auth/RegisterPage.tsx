@@ -4,10 +4,13 @@ import { supabase } from '@/lib/supabase'
 import { errorMessage } from '@/lib/errors'
 import { Button } from '@/components/ui/Button'
 import { FormError, TextField } from '@/components/ui/Field'
+import { BirthdayFields, birthDateError } from '@/features/profile/birthday'
 import { AuthLayout } from './AuthLayout'
 
 export function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [birthDate, setBirthDate] = useState('')
+  const [shareBirthday, setShareBirthday] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
@@ -19,12 +22,15 @@ export function RegisterPage() {
     setError(null)
     if (form.name.trim().length < 2) return setError('Escribe tu nombre.')
     if (form.password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres.')
+    const dateError = birthDateError(birthDate)
+    if (dateError) return setError(dateError)
 
     setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
-      options: { data: { full_name: form.name.trim() } },
+      // La base de datos guarda la fecha aparte, donde solo la ve esta persona
+      options: { data: { full_name: form.name.trim(), birth_date: birthDate, share_birthday: shareBirthday } },
     })
     if (error) {
       setLoading(false)
@@ -75,9 +81,10 @@ export function RegisterPage() {
           value={form.password}
           onChange={set('password')}
         />
+        <BirthdayFields date={birthDate} share={shareBirthday} onDate={setBirthDate} onShare={setShareBirthday} />
         <p className="text-sm text-white/70">Un admin de Troko Bloco revisará tu cuenta y te dará acceso. Después podrás pedir entrar en tus grupos.</p>
         <FormError>{error}</FormError>
-        <Button type="submit" block loading={loading} disabled={!form.email || !form.password || !form.name} className="min-h-14 text-lg">
+        <Button type="submit" block loading={loading} disabled={!form.email || !form.password || !form.name || !birthDate} className="min-h-14 text-lg">
           Crear cuenta
         </Button>
       </form>

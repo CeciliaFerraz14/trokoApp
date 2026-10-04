@@ -33,6 +33,11 @@ await db.exec(`
   create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000)
     returns bigint language sql security definer as $$ insert into net.calls (url, body, headers) values (url, body, headers) returning id $$;
   grant usage on schema net to anon, authenticated;
+  -- pg_cron simulado: guarda las tareas programadas
+  create schema cron;
+  create table cron.job (jobname text primary key, schedule text, command text);
+  create function cron.schedule(job_name text, schedule text, command text) returns bigint language sql as $$
+    insert into cron.job values (job_name, schedule, command) on conflict (jobname) do update set schedule = excluded.schedule, command = excluded.command returning 1::bigint $$;
   alter default privileges in schema public grant execute on functions to anon, authenticated;
 `)
 
@@ -591,6 +596,54 @@ await db.exec(readFileSync(`${ROOT}/migrations/0016_drop_calendar_feed.sql`, 'ut
 check('ya no existe el feed público', !!(await asErr(null, `select * from calendar_feed('x')`, [], 'anon')))
 check('ni los enlaces secretos', !!(await asErr(F, `select my_calendar_token()`)) && !(await one(`select to_regclass('public.calendar_tokens') t`)).t)
 check('borrar una cuenta sigue funcionando', !(await asErr(A, `select delete_account($1)`, [C])))
+
+console.log('Cumpleaños (0017)')
+// PGlite no tiene pg_cron: se usa el simulado de arriba
+await db.exec(readFileSync(`${ROOT}/migrations/0017_birthdays.sql`, 'utf8').replace(/create extension if not exists pg_cron;/i, ''))
+const signup = async (email, meta) => (await one(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`, [email, meta])).id
+const J = await signup('j@troko.es', { full_name: 'Julia', birth_date: '2010-10-04', share_birthday: true })
+const K = await signup('k@troko.es', { full_name: 'Koldo', birth_date: '1990-10-04', share_birthday: false })
+const L = await signup('l@troko.es', { full_name: 'Lola', birth_date: 'no-es-fecha' })
+const M = await signup('m@troko.es', { full_name: 'Mar', birth_date: '2004-02-29', share_birthday: true })
+const Nn = await signup('n@troko.es', { full_name: 'Nico', birth_date: '1999-10-04', share_birthday: true })
+check('al registrarse se guarda la fecha y si se comparte', (await one(`select birth_date::text d, share from birthdays where user_id=$1`, [J])).share === true)
+check('sin marcar, no se comparte', (await one(`select share from birthdays where user_id=$1`, [K])).share === false)
+check('una fecha no válida no impide crear la cuenta', !!(await one(`select 1 x from profiles where id=$1`, [L])) && !(await one(`select 1 x from birthdays where user_id=$1`, [L])))
+await as(A, `select approve_user($1, $2)`, [J, [raiz, brote]])
+await as(A, `select approve_user($1, $2)`, [K, [raiz]])
+await as(A, `select approve_user($1, $2)`, [M, [brote]])
+await as(A, `select approve_user($1, $2)`, [Nn, []]) // sin grupos
+check('cada cual ve su fecha', (await as(J, `select birth_date from birthdays`)).length === 1)
+check('nadie ve la fecha de otra persona (ni un admin)', (await as(F, `select * from birthdays where user_id=$1`, [J])).length === 0 && (await as(A, `select * from birthdays where user_id=$1`, [J])).length === 0)
+check('puede cambiar si la comparte', (await as(K, `update birthdays set share = true where user_id=$1 returning share`, [K]))[0]?.share === true)
+await as(K, `update birthdays set share = false where user_id=$1`, [K])
+check('no puede cambiar la de otra persona', (await as(K, `update birthdays set share = false where user_id=$1 returning 1`, [J])).length === 0)
+check('fecha futura rechazada', /no válida/.test(await asErr(J, `update birthdays set birth_date = current_date + 1 where user_id=$1`, [J])))
+check('quien no la puso puede añadirla después', (await as(F, `insert into birthdays (birth_date, share) values ('1985-05-05', true) returning user_id`))[0]?.user_id === F)
+
+await db.exec(`delete from net.calls`)
+const made = (await one(`select birthday_announcements('2026-10-04') n`)).n
+const bday = await db.query(`select * from announcements where birthday_on = '2026-10-04' order by title`)
+check('felicita solo a quien comparte y está en algún grupo', made === 1 && bday.rows.length === 1 && bday.rows[0].birthday_of === J)
+const jAnn = bday.rows[0]
+check('título con su nombre, sin edad y sin autor', jAnn.title === '🎂 ¡Hoy es el cumpleaños de Julia!' && jAnn.author_id === null && !/\d{2}/.test(jAnn.title + jAnn.body))
+check('para todos sus grupos', jAnn.group_ids.length === 2 && jAnn.group_ids.includes(raiz) && jAnn.group_ids.includes(brote))
+check('llamarlo otra vez el mismo día no duplica', (await one(`select birthday_announcements('2026-10-04') n`)).n === 0)
+check('el grupo lo ve en Avisos', (await as(G, `select id from announcements where id=$1`, [jAnn.id])).length === 1)
+check('envía la notificación', (await calls()).some((c) => c.kind === 'announcement' && c.id1 === jAnn.id))
+await as(J, `select save_push_subscription('https://push.example/j', 'k', 'a')`)
+const bPush = (await as(null, `select push_prepare('s3cret', 'announcement', $1) p`, [jAnn.id], 'anon'))[0].p
+check('notificación sin "Aviso:" con la felicitación', bPush.title === jAnn.title && bPush.body === jAnn.body)
+check('a su grupo, pero no a quien cumple años', bPush.subscriptions.length > 0 && !bPush.subscriptions.some((x) => x.endpoint === 'https://push.example/j'))
+check('29 de febrero: se felicita el 28 si el año no es bisiesto', (await one(`select birthday_announcements('2027-02-28') n`)).n === 1 &&
+  (await one(`select birthday_of from announcements where birthday_on = '2027-02-28'`)).birthday_of === M)
+check('y el 29 si es bisiesto', (await one(`select birthday_announcements('2028-02-28') n`)).n === 0 && (await one(`select birthday_announcements('2028-02-29') n`)).n === 1)
+check('desde la app no se puede crear un aviso de cumpleaños', (await as(A, `insert into announcements (title, birthday_of, birthday_on) values ('Falso', $1, '2026-01-01') returning birthday_of`, [K]))[0].birthday_of === null)
+check('ni convertir uno normal', (await as(A, `update announcements set birthday_of = $1 where id=$2 returning birthday_of`, [K, aAnn]))[0].birthday_of === null)
+check('ni llamar a la función de felicitaciones', !!(await asErr(A, `select birthday_announcements()`)))
+check('tarea diaria programada', (await one(`select schedule, command from cron.job where jobname = 'troko-cumpleanos'`))?.command.includes('birthday_announcements'))
+check('al borrar la cuenta se borran su fecha y sus felicitaciones', !(await asErr(A, `select delete_account($1)`, [J])) &&
+  (await one(`select (select count(*) from birthdays where user_id=$1) + (select count(*) from announcements where birthday_of=$1) n`, [J])).n == 0)
 
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

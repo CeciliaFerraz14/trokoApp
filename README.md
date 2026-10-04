@@ -39,6 +39,7 @@ En Supabase → **SQL Editor** → *New query*, pega y ejecuta **en este orden**
 | `supabase/migrations/0014_chat_push.sql` | Notificación push con cada mensaje del chat (una por grupo en el móvil) |
 | `supabase/migrations/0015_event_categories.sql` | Tipos de evento: fuera Ensayo y Reunión; nuevos No hay clase, Evento y Talleres especiales |
 | `supabase/migrations/0016_drop_calendar_feed.sql` | Quita la suscripción al calendario del móvil (.ics): función pública, enlaces secretos y su tabla |
+| `supabase/migrations/0017_birthdays.sql` | Cumpleaños: fecha de nacimiento privada, felicitación automática en Avisos (pg_cron, cada mañana) y su notificación |
 | `supabase/seed.sql` | Los grupos actuales (Semilla, Brote, Raíz, Bloco, Timbau). Se puede repetir sin duplicar |
 
 > Cada fase añadirá una migración nueva (`0002_…`, `0003_…`). Ejecuta solo las que aún no hayas ejecutado.
@@ -128,6 +129,13 @@ npm run icons        # regenera logos limpios e iconos a partir de logos/*.png
 - **Repeticiones**: cada semana, cada dos semanas o cada mes, hasta 60 fechas. Cada fecha es un evento propio: tiene su asistencia y se puede cancelar o cambiar sola. Al editar se elige *Solo este* o *Este y los siguientes* (si se cambia la hora, las siguientes se mueven igual).
 - **Asistencia**: *Voy / Quizá / No voy*. Quien ve el evento ve quién va.
 - **Mi nota**: nota privada por evento (solo la ve quien la escribe).
+
+## 7c-bis. Cumpleaños
+
+- Al **registrarse** se pide la fecha de nacimiento y si se quiere **compartir el cumpleaños con sus grupos** (desmarcado por defecto). Se puede cambiar, o ponerla si la cuenta es anterior, en *Perfil → Editar perfil*.
+- La fecha se guarda en la tabla `birthdays`, que **solo ve su dueño/a** (ni los admins): nadie ve la fecha ni la edad, y los cumpleaños **no salen en el calendario**.
+- Si se comparte, ese día (hora de Madrid) se publica sola en **Avisos** una felicitación ("🎂 ¡Hoy es el cumpleaños de …!") para todos sus grupos, firmada por Troko Bloco, y les llega la **notificación push** (a quien cumple años, no). Quien nació un 29 de febrero lo celebra el 28 en los años no bisiestos.
+- La publica `birthday_announcements()`, que `pg_cron` llama cada día a las 7:00 UTC (9:00 en verano, 8:00 en invierno). No se duplica aunque se llame varias veces.
 
 ## 7d. Muro de grupos
 

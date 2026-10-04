@@ -14,15 +14,17 @@ import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
-import type { Profile } from '@/types/database'
+import type { Birthday, Profile } from '@/types/database'
+import { BirthdayFields, birthDateError, useMyBirthday, useSaveBirthday } from './birthday'
 
 export function EditProfilePage() {
   const { data: me } = useMe()
-  if (!me) return <Spinner />
-  return <EditProfileForm profile={me.profile} />
+  const birthday = useMyBirthday()
+  if (!me || birthday.isPending) return <Spinner />
+  return <EditProfileForm profile={me.profile} birthday={birthday.data ?? null} />
 }
 
-function EditProfileForm({ profile }: { profile: Profile }) {
+function EditProfileForm({ profile, birthday }: { profile: Profile; birthday: Pick<Birthday, 'birth_date' | 'share'> | null }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
@@ -32,6 +34,9 @@ function EditProfileForm({ profile }: { profile: Profile }) {
   const [nickname, setNickname] = useState(profile.nickname ?? '')
   const [instruments, setInstruments] = useState<string[]>(profile.instruments)
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url)
+  const [birthDate, setBirthDate] = useState(birthday?.birth_date ?? '')
+  const [shareBirthday, setShareBirthday] = useState(birthday?.share ?? false)
+  const saveBirthday = useSaveBirthday()
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +67,9 @@ function EditProfileForm({ profile }: { profile: Profile }) {
     e.preventDefault()
     setError(null)
     if (fullName.trim().length < 2) return setError('Escribe tu nombre.')
+    // Quien tenía cuenta antes de pedir la fecha puede dejarla vacía (pero no compartirla así)
+    const dateError = birthDate || birthday || shareBirthday ? birthDateError(birthDate) : null
+    if (dateError) return setError(dateError)
     setSaving(true)
     const { error } = await supabase
       .from('profiles')
@@ -72,8 +80,19 @@ function EditProfileForm({ profile }: { profile: Profile }) {
         avatar_url: avatarUrl,
       })
       .eq('id', profile.id)
+    if (error) {
+      setSaving(false)
+      return setError(errorMessage(error))
+    }
+    if (birthDate && (birthDate !== birthday?.birth_date || shareBirthday !== birthday?.share)) {
+      try {
+        await saveBirthday.mutateAsync({ birthDate, share: shareBirthday })
+      } catch (err) {
+        setSaving(false)
+        return setError(errorMessage(err))
+      }
+    }
     setSaving(false)
-    if (error) return setError(errorMessage(error))
     await qc.invalidateQueries({ queryKey: ['me'] })
     await qc.invalidateQueries({ queryKey: ['group-members'] })
     toast('Perfil guardado')
@@ -133,6 +152,11 @@ function EditProfileForm({ profile }: { profile: Profile }) {
                 )
               })}
             </div>
+          </fieldset>
+
+          <fieldset>
+            <legend className="mb-2 text-sm font-semibold text-muted">Cumpleaños</legend>
+            <BirthdayFields date={birthDate} share={shareBirthday} onDate={setBirthDate} onShare={setShareBirthday} />
           </fieldset>
 
           <FormError>{error}</FormError>

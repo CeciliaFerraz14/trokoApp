@@ -60,6 +60,18 @@ export type Announcement = {
   created_at: string
   updated_at: string
   edited_at: string | null
+  /** Felicitación automática: de quién es el cumpleaños y qué día (la crea la base de datos) */
+  birthday_of: string | null
+  birthday_on: string | null
+}
+
+/** Fecha de nacimiento: solo la ve su dueño/a */
+export type Birthday = {
+  user_id: string
+  birth_date: string
+  /** Compartir el cumpleaños con sus grupos (felicitación en Avisos y notificación) */
+  share: boolean
+  updated_at: string
 }
 
 export type AnnouncementPhoto = {
@@ -237,9 +249,15 @@ export type Database = {
         Update: Partial<GroupInviteCode>
         Relationships: [Rel<'group_invite_codes_group_id_fkey', 'group_id', 'groups'>]
       }
+      birthdays: {
+        Row: Birthday
+        Insert: { user_id?: string; birth_date: string; share: boolean }
+        Update: Partial<Pick<Birthday, 'birth_date' | 'share'>>
+        Relationships: [Rel<'birthdays_user_id_fkey', 'user_id', 'profiles'>]
+      }
       announcements: {
         Row: Announcement
-        Insert: Partial<Omit<Announcement, 'id' | 'author_id' | 'created_at' | 'updated_at' | 'edited_at'>> & { title: string }
+        Insert: Partial<Omit<Announcement, 'id' | 'author_id' | 'created_at' | 'updated_at' | 'edited_at' | 'birthday_of' | 'birthday_on'>> & { title: string }
         Update: Partial<Pick<Announcement, 'title' | 'body' | 'group_ids' | 'important' | 'pinned' | 'link_url'>>
         Relationships: [Rel<'announcements_author_id_fkey', 'author_id', 'profiles'>]
       }
