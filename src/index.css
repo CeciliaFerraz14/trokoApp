@@ -149,3 +149,14 @@
     mask: url('/logo-troko-bloco.png') center / contain no-repeat;
   }
 }
+
+/* Confeti de los avisos de cumpleaños: flota un poco (--r = giro de cada pieza) */
+@keyframes confetti-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--r));
+  }
+  50% {
+    transform: translateY(-5px) rotate(calc(var(--r) + 14deg));
+  }
+}

@@ -12,7 +12,8 @@ const UNREAD_WINDOW_MS = 1000 * 60 * 60 * 24 * 30
 
 const SELECT =
   '*, author:profiles!announcements_author_id_fkey(id, full_name, nickname, avatar_url), reads:announcement_reads(count), ' +
-  'photos:announcement_photos(id, path, width, height, position)'
+  'photos:announcement_photos(id, path, width, height, position), ' +
+  'birthday:profiles!announcements_birthday_of_fkey(id, full_name, nickname, avatar_url)'
 const BUCKET = 'announcements'
 
 export type AnnouncementAuthor = Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'>
@@ -28,10 +29,13 @@ export interface AnnouncementItem extends Announcement {
   unread: boolean
   /** Fotos con sus URLs firmadas (bucket privado "announcements") */
   photos: SignedPhoto[]
+  /** Felicitación de cumpleaños: la persona que los cumple (sin datos en cachés antiguas) */
+  birthday?: AnnouncementAuthor | null
 }
 
 type Row = Announcement & {
   author: AnnouncementAuthor | null
+  birthday: AnnouncementAuthor | null
   reads: { count: number }[]
   photos: Omit<SignedPhoto, 'url' | 'thumbUrl'>[]
 }

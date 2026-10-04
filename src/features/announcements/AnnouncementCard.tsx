@@ -9,6 +9,7 @@ import { Audience } from '@/features/groups/audience'
 import { parseVideo } from '@/features/wall/video'
 import type { Group } from '@/types/database'
 import type { AnnouncementItem } from './api'
+import { BirthdayBanner } from './BirthdayBanner'
 
 export function AnnouncementCard({
   item,
@@ -43,6 +44,7 @@ export function AnnouncementCard({
         )}
         <span className="ml-auto text-sm text-muted">{formatWhen(item.created_at)}</span>
       </div>
+      {item.birthday_of && <BirthdayBanner person={item.birthday} />}
       <h3 className={cn('font-display text-lg leading-snug', highlight ? 'font-bold' : 'font-semibold')}>{item.title}</h3>
       {item.body && <p className="mt-1 line-clamp-3 break-words whitespace-pre-line text-muted">{item.body}</p>}
       {item.photos.length > 0 && (

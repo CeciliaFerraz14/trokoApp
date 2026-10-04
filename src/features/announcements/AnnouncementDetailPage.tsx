@@ -18,6 +18,7 @@ import { PhotoGrid } from '@/features/wall/PhotoGrid'
 import { VideoPreview } from '@/features/wall/VideoPreview'
 import { parseVideo } from '@/features/wall/video'
 import { canEditAnnouncement, useAnnouncement, useDeleteAnnouncement, useMarkRead, useSaveAnnouncement } from './api'
+import { BirthdayBanner } from './BirthdayBanner'
 
 export function AnnouncementDetailPage() {
   const { id } = useParams()
@@ -98,6 +99,7 @@ export function AnnouncementDetailPage() {
               )}
             </div>
           )}
+          {a.birthday_of && <BirthdayBanner person={a.birthday} large />}
           <h2 className="font-display text-3xl leading-tight font-bold">{a.title}</h2>
           <div className="flex items-center gap-3">
             <Avatar name={a.author?.full_name ?? 'Troko Bloco'} url={a.author?.avatar_url} size="sm" />
