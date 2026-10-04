@@ -54,6 +54,19 @@ export function useUserEmails() {
   })
 }
 
+/** Usuarios de Instagram de quien acepta que le etiqueten (solo admin) */
+export function useInstagramUsernames() {
+  return useQuery({
+    queryKey: ['admin', 'instagram'],
+    queryFn: async () => {
+      // Sin permiso solo se ve el propio: también se descarta
+      const { data, error } = await supabase.from('instagram').select('user_id, username').eq('tag_consent', true)
+      if (error) throw error
+      return data
+    },
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Mutaciones
 // ---------------------------------------------------------------------------
