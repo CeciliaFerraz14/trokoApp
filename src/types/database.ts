@@ -7,6 +7,8 @@ export type AccountStatus = 'pending' | 'active' | 'rejected'
 export type GroupRole = 'member' | 'coordinator'
 export type EventCategory = 'class' | 'no_class' | 'event' | 'workshop' | 'gig' | 'festival' | 'social' | 'other'
 export type AttendanceStatus = 'yes' | 'maybe' | 'no'
+export type LibrarySection = 'guide' | 'music' | 'video'
+export type MerchOrderStatus = 'pending' | 'ready' | 'delivered' | 'cancelled'
 
 export type Profile = {
   id: string
@@ -208,6 +210,52 @@ export type GroupJoinRequest = {
 }
 
 /** Resumen del panel de admin (función admin_stats) */
+/** Trokoteca: guía (texto + PDF opcional), música o vídeo (enlace) */
+export type LibraryItem = {
+  id: string
+  section: LibrarySection
+  title: string
+  body: string
+  link_url: string | null
+  /** Solo guías: guides/<id>/<archivo>.pdf en el bucket privado "trokoteca" */
+  file_path: string | null
+  file_name: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MerchProduct = {
+  id: string
+  name: string
+  description: string
+  /** En céntimos de euro */
+  price_cents: number
+  /** Tallas o modelos; vacío = talla única */
+  sizes: string[]
+  /** merch/<id>/<foto>.jpg en el bucket "trokoteca" (miniatura: <foto>_t.jpg) */
+  photo_path: string | null
+  available: boolean
+  position: number
+  created_at: string
+  updated_at: string
+}
+
+export type MerchOrder = {
+  id: string
+  user_id: string
+  product_id: string | null
+  /** Copiados del producto al pedir */
+  product_name: string
+  unit_price_cents: number
+  size: string | null
+  quantity: number
+  note: string
+  status: MerchOrderStatus
+  created_at: string
+  updated_at: string
+}
+
 export type AdminStats = {
   people: { active: number; pending: number; rejected: number; admins: number }
   content: { announcements: number; events: number; posts: number; photos: number; comments: number; messages: number }
@@ -270,6 +318,27 @@ export type Database = {
         Insert: { user_id?: string; username: string; tag_consent: boolean }
         Update: Partial<Pick<Instagram, 'username' | 'tag_consent'>>
         Relationships: [Rel<'instagram_user_id_fkey', 'user_id', 'profiles'>]
+      }
+      library_items: {
+        Row: LibraryItem
+        Insert: Pick<LibraryItem, 'section' | 'title'> & Partial<Pick<LibraryItem, 'id' | 'body' | 'link_url' | 'file_path' | 'file_name'>>
+        Update: Partial<Pick<LibraryItem, 'title' | 'body' | 'link_url' | 'file_path' | 'file_name'>>
+        Relationships: [Rel<'library_items_created_by_fkey', 'created_by', 'profiles'>]
+      }
+      merch_products: {
+        Row: MerchProduct
+        Insert: Pick<MerchProduct, 'name' | 'price_cents'> & Partial<Pick<MerchProduct, 'id' | 'description' | 'sizes' | 'photo_path' | 'available' | 'position'>>
+        Update: Partial<Pick<MerchProduct, 'name' | 'description' | 'price_cents' | 'sizes' | 'photo_path' | 'available' | 'position'>>
+        Relationships: []
+      }
+      merch_orders: {
+        Row: MerchOrder
+        Insert: Pick<MerchOrder, 'product_id' | 'quantity'> & Partial<Pick<MerchOrder, 'size' | 'note'>>
+        Update: Partial<Pick<MerchOrder, 'status'>>
+        Relationships: [
+          Rel<'merch_orders_user_id_fkey', 'user_id', 'profiles'>,
+          Rel<'merch_orders_product_id_fkey', 'product_id', 'merch_products'>,
+        ]
       }
       announcements: {
         Row: Announcement
@@ -397,6 +466,8 @@ export type Database = {
       event_category: EventCategory
       attendance_status: AttendanceStatus
       join_request_status: JoinRequestStatus
+      library_section: LibrarySection
+      merch_order_status: MerchOrderStatus
     }
     CompositeTypes: { [_ in never]: never }
   }

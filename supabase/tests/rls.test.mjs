@@ -672,5 +672,67 @@ check('usuario no válido rechazado', /no válido/.test(await asErr(Q, `update i
 check('se puede borrar', (await as(Q, `delete from instagram where user_id=$1 returning 1`, [Q])).length === 1)
 check('al borrar la cuenta se borra su Instagram', !(await asErr(A, `select delete_account($1)`, [P])) && !(await one(`select 1 x from instagram where user_id=$1`, [P])))
 
+console.log('Trokoteca (0019)')
+await db.exec(readFileSync(`${ROOT}/migrations/0019_trokoteca.sql`, 'utf8'))
+const T = await signup('t@troko.es', { full_name: 'Tomás pendiente' }) // sin aprobar
+// Guías, música y vídeos
+const guide = (await as(A, `insert into library_items (section, title, body) values ('guide', '  Cómo afinar  ', 'Texto') returning *`))[0]
+check('un admin crea una guía (título sin espacios, autor)', guide?.title === 'Cómo afinar' && guide.created_by === A)
+check('un admin adjunta su PDF', (await as(A, `update library_items set file_path = $2, file_name = 'afinar.pdf' where id=$1 returning file_path`, [guide.id, `guides/${guide.id}/afinar.pdf`]))[0]?.file_path === `guides/${guide.id}/afinar.pdf`)
+check('ruta de PDF de otra guía rechazada', /no válida/.test(await asErr(A, `update library_items set file_path = 'guides/otra/x.pdf' where id=$1`, [guide.id])))
+check('música sin enlace rechazada', !!(await asErr(A, `insert into library_items (section, title) values ('music', 'Sin enlace')`)))
+check('música o vídeo no llevan PDF', !!(await asErr(A, `insert into library_items (section, title, link_url, file_path) values ('video', 'x', 'https://youtu.be/abcdefghijk', 'guides/x/y.pdf')`)))
+check('enlace que no es https rechazado', !!(await asErr(A, `insert into library_items (section, title, link_url) values ('music', 'x', 'http://x.com')`)))
+const song = (await as(A, `insert into library_items (section, title, link_url) values ('music', 'Samba reggae', 'https://open.spotify.com/track/abcdefghij') returning id`))[0]
+check('miembros activos ven la Trokoteca', (await as(Q, `select id from library_items`)).length === 2)
+check('una cuenta pendiente no', (await as(T, `select id from library_items`)).length === 0)
+check('un miembro no puede publicar', !!(await asErr(Q, `insert into library_items (section, title, body) values ('guide', 'x', '')`)))
+check('ni editar', (await as(Q, `update library_items set title = 'hack' where id=$1 returning 1`, [guide.id])).length === 0)
+check('ni borrar', (await as(Q, `delete from library_items where id=$1 returning 1`, [song.id])).length === 0)
+check('un coordinador tampoco', !!(await asErr(B, `insert into library_items (section, title, body) values ('guide', 'x', '')`)))
+check('un admin edita sin cambiar el autor', (await as(A, `update library_items set title = 'Afinar', created_by = $2 where id=$1 returning title, created_by`, [guide.id, Q]))[0]?.created_by === A)
+check('un admin borra', (await as(A, `delete from library_items where id=$1 returning 1`, [song.id])).length === 1)
+
+// Productos
+const shirt = (await as(A, `insert into merch_products (name, price_cents, sizes) values ('Camiseta', 1500, array[' S','M','M','', 'L']) returning *`))[0]
+check('un admin crea un producto (tallas limpias y en orden)', shirt?.sizes.join() === 'S,M,L')
+const bag = (await as(A, `insert into merch_products (name, price_cents) values ('Bolsa', 800) returning *`))[0]
+check('un miembro ve el catálogo', (await as(Q, `select id from merch_products`)).length === 2)
+check('pero no crea productos', !!(await asErr(Q, `insert into merch_products (name, price_cents) values ('x', 1)`)))
+check('ni cambia precios', (await as(Q, `update merch_products set price_cents = 1 where id=$1 returning 1`, [shirt.id])).length === 0)
+check('foto de otro producto rechazada', /no válida/.test(await asErr(A, `update merch_products set photo_path = $2 where id=$1`, [shirt.id, `merch/${bag.id}/x.jpg`])))
+
+// Pedidos
+const order = (await as(Q, `insert into merch_orders (product_id, size, quantity, product_name, unit_price_cents, status, user_id) values ($1, 'M', 2, 'Gratis', 0, 'delivered', $2) returning *`, [shirt.id, S]))[0]
+check('un miembro pide: nombre, precio, estado y dueño los pone la base de datos', order?.user_id === Q && order.product_name === 'Camiseta' && order.unit_price_cents === 1500 && order.status === 'pending')
+check('sin talla, si el producto tiene tallas, rechazado', /talla/.test(await asErr(Q, `insert into merch_orders (product_id, quantity) values ($1, 1)`, [shirt.id])))
+check('talla que no existe rechazada', /talla/.test(await asErr(Q, `insert into merch_orders (product_id, size, quantity) values ($1, 'XXL', 1)`, [shirt.id])))
+check('talla única: la talla se ignora', (await as(S, `insert into merch_orders (product_id, size, quantity) values ($1, 'M', 1) returning size`, [bag.id]))[0]?.size === null)
+check('cantidad fuera de rango rechazada', !!(await asErr(Q, `insert into merch_orders (product_id, size, quantity) values ($1, 'S', 0)`, [shirt.id])))
+await as(A, `update merch_products set available = false where id=$1`, [bag.id])
+check('producto agotado: no se puede pedir', /agotado/.test(await asErr(Q, `insert into merch_orders (product_id, quantity) values ($1, 1)`, [bag.id])))
+check('una cuenta pendiente no puede pedir', !!(await asErr(T, `insert into merch_orders (product_id, size, quantity) values ($1, 'S', 1)`, [shirt.id])))
+check('cada cual ve sus pedidos', (await as(Q, `select id from merch_orders`)).length === 1 && (await as(S, `select id from merch_orders`)).length === 1)
+check('un admin los ve todos', (await as(A, `select id from merch_orders`)).length === 2)
+check('el dueño no puede marcarlo como entregado', /cancelar/.test(await asErr(Q, `update merch_orders set status = 'delivered' where id=$1`, [order.id])))
+check('ni cambiar lo pedido', (await as(Q, `update merch_orders set quantity = 9, unit_price_cents = 1 where id=$1 returning quantity, unit_price_cents`, [order.id]))[0]?.quantity === 2)
+check('nadie cambia el pedido de otra persona', (await as(S, `update merch_orders set status = 'cancelled' where id=$1 returning 1`, [order.id])).length === 0)
+check('un admin cambia el estado', (await as(A, `update merch_orders set status = 'ready' where id=$1 returning status`, [order.id]))[0]?.status === 'ready')
+check('ya preparado, el dueño no puede cancelarlo', /cancelar/.test(await asErr(Q, `update merch_orders set status = 'cancelled' where id=$1`, [order.id])))
+const order2 = (await as(Q, `insert into merch_orders (product_id, size, quantity, note) values ($1, 'L', 1, 'para mi hija') returning id`, [shirt.id]))[0]
+check('pendiente, el dueño lo cancela', (await as(Q, `update merch_orders set status = 'cancelled' where id=$1 returning status`, [order2.id]))[0]?.status === 'cancelled')
+check('el dueño no borra pedidos', (await as(Q, `delete from merch_orders where id=$1 returning 1`, [order2.id])).length === 0)
+await as(A, `delete from merch_products where id=$1`, [shirt.id])
+check('al borrar el producto el pedido se queda con su nombre y precio', (await one(`select product_id, product_name, unit_price_cents from merch_orders where id=$1`, [order.id]))?.product_name === 'Camiseta')
+
+// Archivos
+const upTk = (uid, name) => asErr(uid, `insert into storage.objects (bucket_id, name) values ('trokoteca', $1)`, [name])
+check('un admin sube un PDF de guía', !(await upTk(A, `guides/${guide.id}/afinar.pdf`)))
+check('un miembro no sube archivos', !!(await upTk(Q, `guides/${guide.id}/otro.pdf`)))
+check('solo en guides/ o merch/', !!(await upTk(A, `otra/${guide.id}/x.pdf`)))
+check('miembros activos ven los archivos', (await as(Q, `select name from storage.objects where bucket_id = 'trokoteca'`)).length === 1)
+check('una cuenta pendiente no', (await as(T, `select name from storage.objects where bucket_id = 'trokoteca'`)).length === 0)
+check('al borrar la cuenta se borran sus pedidos', !(await asErr(A, `select delete_account($1)`, [Q])) && !(await one(`select 1 x from merch_orders where user_id=$1`, [Q])))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

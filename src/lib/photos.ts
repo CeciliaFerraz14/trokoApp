@@ -1,9 +1,9 @@
-// Fotos privadas (muro, chat y avisos): se reducen en el móvil, se suben con una
+// Fotos privadas (muro, chat, avisos y productos de la Trokoteca): se reducen en el móvil, se suben con una
 // miniatura al lado y se muestran con URLs firmadas temporales.
 import { supabase } from '@/lib/supabase'
 import { compressImage } from '@/lib/image'
 
-export type PhotoBucket = 'wall' | 'chat' | 'announcements'
+export type PhotoBucket = 'wall' | 'chat' | 'announcements' | 'trokoteca'
 
 /** Las URLs firmadas duran una semana (la caché offline también) */
 export const SIGNED_TTL = 60 * 60 * 24 * 7

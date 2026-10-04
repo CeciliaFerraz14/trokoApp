@@ -13,6 +13,7 @@ import { ProfilePage } from '@/features/profile/ProfilePage'
 import { EditProfilePage } from '@/features/profile/EditProfilePage'
 import { ChangePasswordPage } from '@/features/profile/ChangePasswordPage'
 import { PrivacyPage } from '@/features/profile/PrivacyPage'
+import { TrokotecaPage } from '@/features/trokoteca/TrokotecaPage'
 import { InstallPage } from '@/features/install/InstallPage'
 import { EmptyState } from '@/components/ui/States'
 import { AppShell } from './AppShell'
@@ -26,6 +27,11 @@ const AnnouncementFormPage = lazy(() => import('@/features/announcements/Announc
 const EventFormPage = lazy(() => import('@/features/calendar/EventFormPage').then((m) => ({ default: m.EventFormPage })))
 const ComposerPage = lazy(() => import('@/features/wall/ComposerPage').then((m) => ({ default: m.ComposerPage })))
 const PostPage = lazy(() => import('@/features/wall/PostPage').then((m) => ({ default: m.PostPage })))
+const GuidePage = lazy(() => import('@/features/trokoteca/GuidePage').then((m) => ({ default: m.GuidePage })))
+const LibraryItemFormPage = lazy(() => import('@/features/trokoteca/LibraryItemFormPage').then((m) => ({ default: m.LibraryItemFormPage })))
+const ProductPage = lazy(() => import('@/features/trokoteca/ProductPage').then((m) => ({ default: m.ProductPage })))
+const ProductFormPage = lazy(() => import('@/features/trokoteca/ProductFormPage').then((m) => ({ default: m.ProductFormPage })))
+const OrdersPage = lazy(() => import('@/features/trokoteca/OrdersPage').then((m) => ({ default: m.OrdersPage })))
 
 // El panel de admin solo lo usan unas pocas personas: se carga aparte
 const AdminPage = lazy(() => import('@/features/admin/AdminPage').then((m) => ({ default: m.AdminPage })))
@@ -66,6 +72,14 @@ export function App() {
             <Route path="/muro/:groupId" element={<GroupPage />} />
             <Route path="/muro/:groupId/nueva" element={<ComposerPage />} />
             <Route path="/muro/:groupId/p/:postId" element={<PostPage />} />
+            <Route path="/trokoteca" element={<TrokotecaPage />} />
+            <Route path="/trokoteca/nuevo" element={<LibraryItemFormPage />} />
+            <Route path="/trokoteca/pedidos" element={<OrdersPage />} />
+            <Route path="/trokoteca/merch/nuevo" element={<ProductFormPage />} />
+            <Route path="/trokoteca/merch/:id" element={<ProductPage />} />
+            <Route path="/trokoteca/merch/:id/editar" element={<ProductFormPage />} />
+            <Route path="/trokoteca/:id" element={<GuidePage />} />
+            <Route path="/trokoteca/:id/editar" element={<LibraryItemFormPage />} />
             <Route path="/perfil" element={<ProfilePage />} />
             <Route path="/perfil/editar" element={<EditProfilePage />} />
             <Route path="/perfil/contrasena" element={<ChangePasswordPage />} />
