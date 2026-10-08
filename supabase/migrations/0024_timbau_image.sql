@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Troko Bloco · Migración 0024 · Imagen de Timbau
--- Logo hecho con el anillo de los demás grupos y el personaje del timbau
+-- Logo hecho con el anillo de los demás grupos, el personaje del timbau y dos ramas con hojas
 -- (original a 1080 px en logos/timbau-1080.png).
 -- =============================================================================
 
