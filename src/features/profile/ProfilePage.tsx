@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { ChevronRight, KeyRound, Loader2, Trash2, LogOut, Moon, Pencil, ShieldCheck, Smartphone, Sun } from 'lucide-react'
+import { ChevronRight, KeyRound, Loader2, Trash2, LogOut, Moon, Pencil, ShieldCheck, Smartphone, Sun, Type } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
+import { FONT_SIZES, useFontSize } from '@/lib/fontSize'
+import { cn } from '@/lib/cn'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge, GroupDot } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -78,6 +80,7 @@ export function ProfilePage() {
               <span className="flex-1 font-semibold">Tema</span>
               <span className="text-muted">{theme === 'dark' ? 'Oscuro' : 'Claro'}</span>
             </button>
+            <FontSizeRow />
             <Link to="/perfil/contrasena" className="flex min-h-14 items-center gap-3 px-4 hover:bg-surface-2">
               <KeyRound className="size-5 text-accent" />
               <span className="flex-1 font-semibold">Cambiar contraseña</span>
@@ -103,6 +106,39 @@ export function ProfilePage() {
         <DeleteMyAccount userId={profile.id} />
       </Page>
     </>
+  )
+}
+
+/** Tamaño de letra: cuatro botones "A" de menor a mayor */
+function FontSizeRow() {
+  const [size, setSize] = useFontSize()
+  return (
+    <div className="space-y-3 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <Type className="size-5 text-accent" />
+        <span className="flex-1 font-semibold">Tamaño de letra</span>
+        <span className="text-muted">{FONT_SIZES.find((s) => s.value === size)?.label}</span>
+      </div>
+      <div role="radiogroup" aria-label="Tamaño de letra" className="grid grid-cols-4 gap-2">
+        {FONT_SIZES.map((s) => (
+          <button
+            key={s.value}
+            type="button"
+            role="radio"
+            aria-checked={size === s.value}
+            aria-label={s.label}
+            onClick={() => setSize(s.value)}
+            className={cn(
+              'flex h-12 items-center justify-center rounded-xl font-display font-semibold transition-colors',
+              size === s.value ? 'bg-fg text-bg' : 'bg-surface-2 hover:bg-line',
+            )}
+          >
+            {/* En px: el botón enseña el tamaño real aunque cambie la escala de la app */}
+            <span style={{ fontSize: `${16 * s.scale}px` }}>A</span>
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 

@@ -55,15 +55,19 @@ export function GroupPage() {
           )
         }
       >
-        <div className="grid grid-cols-3 gap-2">
-          <Stat value={members.data?.length} label="personas" />
-          <Stat value={gallery.data?.length} label="fotos" />
-          {/* Los generales (toda la batucada) también son del grupo */}
-          <Stat
-            value={events.data?.filter((e) => !e.cancelled && (e.group_ids.length === 0 || e.group_ids.includes(g.id))).length}
-            label="próximos"
-          />
-        </div>
+        {/* En el chat no van las cifras: así la cabecera es fija y la flecha de volver
+            sigue a mano al bajar por los mensajes (allí no hay barra de navegación) */}
+        {tab !== 'chat' && (
+          <div className="grid grid-cols-3 gap-2">
+            <Stat value={members.data?.length} label="personas" />
+            <Stat value={gallery.data?.length} label="fotos" />
+            {/* Los generales (toda la batucada) también son del grupo */}
+            <Stat
+              value={events.data?.filter((e) => !e.cancelled && (e.group_ids.length === 0 || e.group_ids.includes(g.id))).length}
+              label="próximos"
+            />
+          </div>
+        )}
       </PageHeader>
       <Page className="space-y-4">
         {g.description && <p className="text-muted">{g.description}</p>}

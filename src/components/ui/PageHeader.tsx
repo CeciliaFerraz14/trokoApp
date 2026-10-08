@@ -31,7 +31,7 @@ export function PageHeader({ title, subtitle, back, leading, actions, children }
     >
       <div className="mx-auto flex min-h-16 max-w-lg items-center gap-3 px-4 py-2">
         {back ? (
-          <HeaderButton label="Volver" onClick={() => (typeof back === 'string' ? navigate(back) : navigate(-1))}>
+          <HeaderButton label="Volver" onClick={() => goBack(navigate, back)}>
             <ChevronLeft className="size-6" />
           </HeaderButton>
         ) : (
@@ -49,6 +49,16 @@ export function PageHeader({ title, subtitle, back, leading, actions, children }
       {children && <div className="mx-auto max-w-lg px-4 pb-5 empty:hidden">{children}</div>}
     </header>
   )
+}
+
+/**
+ * Vuelve a la pantalla anterior. Si la app se abrió directamente aquí (p. ej.
+ * desde una notificación) no hay a dónde volver: sube a la pantalla padre.
+ */
+function goBack(navigate: ReturnType<typeof useNavigate>, back: true | string) {
+  if (typeof back === 'string') navigate(back)
+  else if ((window.history.state as { idx?: number } | null)?.idx) navigate(-1)
+  else navigate('..', { relative: 'path' })
 }
 
 /** Acción de la cabecera como botón */

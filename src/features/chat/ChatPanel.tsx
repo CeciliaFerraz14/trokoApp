@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn'
 import { formatPastDay } from '@/lib/dates'
 import { errorMessage } from '@/lib/errors'
 import { MAX_PHOTOS } from '@/lib/photos'
+import { useKeyboardInset } from '@/lib/viewport'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button, IconButton } from '@/components/ui/Button'
 import { TextArea } from '@/components/ui/Field'
@@ -192,29 +193,6 @@ function Message({
       </div>
     </div>
   )
-}
-
-/**
- * Teclado en pantalla: cuánto tapa por abajo (0 si no está). En iPhone y en
- * Android el teclado encoge solo la zona visible, y lo fijo abajo se queda detrás.
- */
-function useKeyboardInset() {
-  const [inset, setInset] = useState(0)
-  useEffect(() => {
-    const vv = window.visualViewport
-    if (!vv) return
-    const update = () => {
-      const covered = window.innerHeight - vv.height - vv.offsetTop
-      setInset(covered > 80 ? covered : 0)
-    }
-    vv.addEventListener('resize', update)
-    vv.addEventListener('scroll', update)
-    return () => {
-      vv.removeEventListener('resize', update)
-      vv.removeEventListener('scroll', update)
-    }
-  }, [])
-  return inset
 }
 
 /** Caja para escribir, fija abajo del todo (o encima del teclado) */

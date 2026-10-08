@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { Spinner } from '@/components/ui/States'
 import { useMe } from '@/features/auth/useMe'
@@ -7,6 +7,7 @@ import { useUnreadCount } from '@/features/announcements/api'
 import { useWallNews } from '@/features/wall/news'
 import { useChatUnreadRealtime, useChatUnreadTotal } from '@/features/chat/unread'
 import { cn } from '@/lib/cn'
+import { useHideOnScroll, useKeyboardInset } from '@/lib/viewport'
 import { TabBar } from './TabBar'
 import { OfflineBanner } from './OfflineBanner'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -23,6 +24,13 @@ export function AppShell() {
   const wallNews = useWallNews()
   const chatUnread = useChatUnreadTotal()
   useChatUnreadRealtime()
+  const scrolledDown = useHideOnScroll(pathname)
+  const keyboard = useKeyboardInset()
+  // iPhone: al cerrar el teclado lo fijo abajo a veces se queda a media pantalla
+  // hasta el siguiente scroll; un scroll "en el sitio" lo recoloca
+  useEffect(() => {
+    if (!keyboard) window.scrollTo(window.scrollX, window.scrollY)
+  }, [keyboard])
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -35,7 +43,7 @@ export function AppShell() {
         </ErrorBoundary>
       </main>
       <OfflineBanner />
-      {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size + chatUnread} />}
+      {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size + chatUnread} hidden={scrolledDown || !!keyboard} />}
     </div>
   )
 }

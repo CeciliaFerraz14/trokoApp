@@ -22,6 +22,9 @@
       try {
         var t = localStorage.getItem('troko-theme')
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+        // Tamaño de letra (mismas escalas que src/lib/fontSize.ts)
+        var f = { small: '87.5%', large: '112.5%', xlarge: '125%' }[localStorage.getItem('troko-font-size')]
+        if (f) document.documentElement.style.fontSize = f
       } catch (e) {}
     </script>
   </head>

@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router'
 import { CalendarDays, Library, Megaphone, ShieldCheck, UserRound, UsersRound, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useFontSize } from '@/lib/fontSize'
 
 interface Tab {
   to: string
@@ -15,13 +16,17 @@ export function TabBar({
   pendingCount = 0,
   unreadCount = 0,
   wallNews = 0,
+  hidden = false,
 }: {
   isAdmin: boolean
   pendingCount?: number
   unreadCount?: number
   /** Grupos con publicaciones nuevas más mensajes del chat sin leer */
   wallNews?: number
+  /** Escondida abajo (al bajar por la página o con el teclado abierto) */
+  hidden?: boolean
 }) {
+  const [fontSize] = useFontSize()
   const tabs: Tab[] = [
     { to: '/avisos', label: 'Avisos', icon: Megaphone, badge: unreadCount },
     { to: '/calendario', label: 'Calendario', icon: CalendarDays },
@@ -30,14 +35,18 @@ export function TabBar({
     { to: '/perfil', label: 'Perfil', icon: UserRound },
   ]
   if (isAdmin) tabs.push({ to: '/admin', label: 'Admin', icon: ShieldCheck, badge: pendingCount })
-  // Con seis secciones (admins) el nombre de la activa no cabe en un móvil: solo iconos
-  const showLabel = tabs.length <= 5
+  // Con seis secciones (admins) o letra grande el nombre de la activa no cabe en un móvil: solo iconos
+  const showLabel = tabs.length <= 5 && (fontSize === 'normal' || fontSize === 'small')
 
   return (
     // Píldora azul flotante; la sección activa es una cápsula negra con su nombre
     <nav
       aria-label="Navegación principal"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
+      className={cn(
+        'pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] transition-transform duration-300',
+        // Al recibir el foco con el teclado (Tab) vuelve a aparecer
+        hidden && 'translate-y-[calc(100%+1rem)] focus-within:translate-y-0',
+      )}
     >
       <ul className="pointer-events-auto mx-auto flex h-16 max-w-lg items-center justify-around rounded-full bg-brand-blue px-2 shadow-xl shadow-black/40">
         {tabs.map(({ to, label, icon: Icon, badge }) => (
