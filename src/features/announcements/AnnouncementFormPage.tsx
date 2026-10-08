@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Megaphone, Pin, TriangleAlert } from 'lucide-react'
+import { BarChart3, Megaphone, Pin, TriangleAlert } from 'lucide-react'
 import { errorMessage } from '@/lib/errors'
 import { Button } from '@/components/ui/Button'
 import { FormError, TextArea, TextField } from '@/components/ui/Field'
@@ -13,6 +13,8 @@ import { AudiencePicker, canPublish, useAudienceField } from '@/features/groups/
 import { PhotoPicker } from '@/features/wall/PhotoPicker'
 import { VideoPreview } from '@/features/wall/VideoPreview'
 import { parseVideo } from '@/features/wall/video'
+import { PollEditor } from '@/features/polls/PollCard'
+import { createPoll, emptyPoll, pollDraftError, type PollDraft } from '@/features/polls/api'
 import { canEditAnnouncement, useAnnouncement, useSaveAnnouncement } from './api'
 
 export function AnnouncementFormPage() {
@@ -30,6 +32,9 @@ export function AnnouncementFormPage() {
   const [pinned, setPinned] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [files, setFiles] = useState<File[]>([])
+  // Encuesta (solo al crear el aviso: después no se puede cambiar)
+  const [withPoll, setWithPoll] = useState(false)
+  const [poll, setPoll] = useState<PollDraft>(emptyPoll)
   const [progress, setProgress] = useState<[number, number] | null>(null)
   const audience = useAudienceField({ isNew })
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +77,8 @@ export function AnnouncementFormPage() {
     const group_ids = audience.value()
     if (!group_ids) return setError('Elige al menos un grupo.')
     if (linkInvalid) return setError('El enlace tiene que empezar por https://')
+    const pollError = isNew && withPoll ? pollDraftError(poll) : null
+    if (pollError) return setError(pollError)
 
     save.mutate(
       {
@@ -87,7 +94,15 @@ export function AnnouncementFormPage() {
       },
       {
         onSettled: () => setProgress(null),
-        onSuccess: (a) => {
+        onSuccess: async (a) => {
+          if (isNew && withPoll) {
+            try {
+              await createPoll({ announcementId: a.id }, poll)
+            } catch (err) {
+              toast(`Aviso publicado, pero la encuesta no se pudo crear: ${errorMessage(err)}`, 'error')
+              return navigate(`/avisos/${a.id}`, { replace: true })
+            }
+          }
           toast(isNew ? 'Aviso publicado' : 'Cambios guardados')
           navigate(`/avisos/${a.id}`, { replace: true })
         },
@@ -132,6 +147,19 @@ export function AnnouncementFormPage() {
             />
             {link && <VideoPreview video={link} />}
           </div>
+
+          {isNew && (
+            <div className="space-y-3">
+              <Switch
+                label="Añadir encuesta"
+                hint="Para preguntar quién viene, qué día va mejor… Después no se podrá cambiar."
+                icon={<BarChart3 className="size-5" />}
+                checked={withPoll}
+                onChange={setWithPoll}
+              />
+              {withPoll && <PollEditor value={poll} onChange={setPoll} />}
+            </div>
+          )}
 
           <AudiencePicker field={audience} noun="aviso" />
 

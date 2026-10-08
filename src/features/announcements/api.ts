@@ -14,7 +14,7 @@ const SELECT =
   '*, author:profiles!announcements_author_id_fkey(id, full_name, nickname, avatar_url), reads:announcement_reads(count), ' +
   'photos:announcement_photos(id, path, width, height, position), ' +
   'birthday:profiles!announcements_birthday_of_fkey(id, full_name, nickname, avatar_url), ' +
-  'comments:announcement_comments(count)'
+  'comments:announcement_comments(count), polls(count)'
 const BUCKET = 'announcements'
 
 export type AnnouncementAuthor = Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'>
@@ -34,6 +34,8 @@ export interface AnnouncementItem extends Announcement {
   birthday?: AnnouncementAuthor | null
   /** Felicitaciones escritas (solo se comenta en los avisos de cumpleaños; sin dato en cachés antiguas) */
   commentCount?: number
+  /** Lleva encuesta */
+  hasPoll?: boolean
 }
 
 type Row = Announcement & {
@@ -41,17 +43,19 @@ type Row = Announcement & {
   birthday: AnnouncementAuthor | null
   reads: { count: number }[]
   comments: { count: number }[]
+  polls: { count: number }[]
   photos: Omit<SignedPhoto, 'url' | 'thumbUrl'>[]
 }
 
 function toItem(row: Row, photos: SignedPhoto[], userId: string, readIds: Set<string>): AnnouncementItem {
-  const { reads, comments, ...rest } = row
+  const { reads, comments, polls, ...rest } = row
   const read = row.author_id === userId || readIds.has(row.id)
   return {
     ...rest,
     photos,
     readCount: reads[0]?.count ?? 0,
     commentCount: comments[0]?.count ?? 0,
+    hasPoll: (polls?.[0]?.count ?? 0) > 0,
     read,
     unread: !read && Date.now() - new Date(row.created_at).getTime() < UNREAD_WINDOW_MS,
   }

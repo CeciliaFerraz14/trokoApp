@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Eye, Megaphone, Pencil, Pin, PinOff, Trash2, TriangleAlert } from 'lucide-react'
+import { Megaphone, Pencil, Pin, PinOff, Trash2, TriangleAlert } from 'lucide-react'
 import { errorMessage } from '@/lib/errors'
 import { formatFull } from '@/lib/dates'
 import { Avatar } from '@/components/ui/Avatar'
@@ -20,6 +20,8 @@ import { parseVideo } from '@/features/wall/video'
 import { canEditAnnouncement, useAnnouncement, useDeleteAnnouncement, useMarkRead, useSaveAnnouncement } from './api'
 import { BirthdayBanner } from './BirthdayBanner'
 import { BirthdayComments } from './BirthdayComments'
+import { ReadersList } from './ReadersList'
+import { PollFor } from '@/features/polls/PollCard'
 
 export function AnnouncementDetailPage() {
   const { id } = useParams()
@@ -115,6 +117,7 @@ export function AnnouncementDetailPage() {
           {a.body && <Linkify text={a.body} className="text-lg leading-relaxed" />}
           <PhotoGrid photos={a.photos} bucket="announcements" />
           {link && <VideoPreview video={link} />}
+          <PollFor parent={{ announcementId: a.id }} />
           <Card className="text-sm text-muted">
             <p className="mb-1 font-semibold text-fg">Para</p>
             <Audience groupIds={a.group_ids} groups={groupMap} />
@@ -126,10 +129,7 @@ export function AnnouncementDetailPage() {
 
         {canEdit && (
           <section className="space-y-3">
-            <p className="flex items-center gap-2 px-1 text-sm text-muted">
-              <Eye className="size-4" aria-hidden />
-              {a.readCount === 1 ? 'Lo ha visto 1 persona' : `Lo han visto ${a.readCount} personas`}
-            </p>
+            <ReadersList announcement={a} />
             <Button
               variant="secondary"
               block

@@ -845,5 +845,93 @@ check('una URL de otra web no', !!(await asErr(A, `update groups set image = 'ht
 check('ni de otro bucket', !!(await asErr(A, `update groups set image = $1 where id=$2`, [url.replace('/public/groups/', '/public/avatars/'), raiz])))
 check('un miembro no cambia la foto del grupo', (await as(S, `update groups set image = null where id=$1 returning 1`, [raiz])).length === 0)
 
+console.log('Reacciones del chat (0029)')
+await db.exec(readFileSync(`${ROOT}/migrations/0029_chat_reactions.sql`, 'utf8'))
+const rMsg = (await as(R, `insert into chat_messages (group_id, body) values ($1, 'Reaccionad') returning id`, [raiz]))[0].id
+const chatReact = (u, e) => as(u, `insert into chat_reactions (message_id, emoji, user_id, group_id) values ($1, $2, $3, $4) on conflict (message_id, user_id) do update set emoji = excluded.emoji returning *`, [rMsg, e, A, brote])
+const r1 = (await chatReact(S, '👏'))[0]
+check('alguien del grupo reacciona (quién y grupo los pone la base de datos)', r1?.user_id === S && r1.group_id === raiz)
+check('cambiar de emoji', (await chatReact(S, '🥁'))[0]?.emoji === '🥁' && (await as(S, `select count(*)::int n from chat_reactions where message_id=$1`, [rMsg]))[0].n === 1)
+check('emoji no permitido rechazado', !!(await asErr(N2, `insert into chat_reactions (message_id, emoji) values ($1, '💩')`, [rMsg])))
+check('fuera del grupo no se reacciona', !!(await asErr(M, `insert into chat_reactions (message_id, emoji) values ($1, '👏')`, [rMsg])))
+check('ni se ven las reacciones', (await as(M, `select 1 from chat_reactions where message_id=$1`, [rMsg])).length === 0)
+check('el grupo las ve', (await as(R, `select emoji from chat_reactions where message_id=$1`, [rMsg])).length === 1)
+check('nadie quita la reacción de otra persona', (await as(R, `delete from chat_reactions where message_id=$1 and user_id=$2 returning 1`, [rMsg, S])).length === 0)
+check('cada cual quita la suya', (await as(S, `delete from chat_reactions where message_id=$1 returning 1`, [rMsg])).length === 1)
+await chatReact(S, '❤️')
+await as(R, `delete from chat_messages where id=$1`, [rMsg])
+check('al borrar el mensaje se van sus reacciones', !(await one(`select 1 x from chat_reactions where message_id=$1`, [rMsg])))
+
+console.log('Encuestas (0030)')
+await db.exec(readFileSync(`${ROOT}/migrations/0030_polls.sql`, 'utf8'))
+const pMsg = (await as(S, `insert into chat_messages (group_id, body) values ($1, '') returning id`, [raiz]))[0].id
+const mkPoll = (u, col, id, opts, multiple = false) =>
+  as(u, `insert into polls (${col}, question, options, multiple) values ($1, ' ¿Quién viene al bolo? ', $2, $3) returning *`, [id, opts, multiple])
+const poll = (await mkPoll(S, 'message_id', pMsg, [' Voy ', 'No puedo', 'Quizá']))[0]
+check('quien escribe el mensaje crea la encuesta (textos recortados)', poll?.created_by === S && poll.question === '¿Quién viene al bolo?' && poll.options[0] === 'Voy')
+check('no en el mensaje de otra persona', !!(await asErr(R, `insert into polls (message_id, question, options) values ($1, 'x', '{a,b}')`, [pMsg])))
+check('al menos dos respuestas', !!(await asErr(R, `insert into polls (message_id, question, options) values ($1, 'x', '{a}')`, [(await as(R, `insert into chat_messages (group_id, body) values ($1, '') returning id`, [raiz]))[0].id])))
+check('sin respuestas vacías', /80/.test(await asErr(S, `insert into polls (message_id, question, options) values ($1, 'x', $2)`, [(await as(S, `insert into chat_messages (group_id, body) values ($1, '') returning id`, [raiz]))[0].id, ['a', '  ']])))
+const vote = (u, pollId, o) => as(u, `insert into poll_votes (poll_id, option, user_id) values ($1, $2, $3) returning *`, [pollId, o, A])
+check('el grupo vota (a su nombre)', (await vote(R, poll.id, 0))[0]?.user_id === R)
+await vote(R, poll.id, 2)
+check('voto único: cambiar de respuesta sustituye el voto', (await as(R, `select option from poll_votes where poll_id=$1 and user_id=$2`, [poll.id, R])).map((v) => v.option).join() === '2')
+check('respuesta que no existe rechazada', /no existe/.test(await asErr(S, `insert into poll_votes (poll_id, option) values ($1, 3)`, [poll.id])))
+check('fuera del grupo no se ve ni se vota', (await as(M, `select 1 from polls where id=$1`, [poll.id])).length === 0 && !!(await asErr(M, `insert into poll_votes (poll_id, option) values ($1, 0)`, [poll.id])))
+check('se ve quién ha votado', (await as(S, `select user_id from poll_votes where poll_id=$1`, [poll.id]))[0]?.user_id === R)
+check('nadie quita el voto de otra persona', (await as(S, `delete from poll_votes where poll_id=$1 and user_id=$2 returning 1`, [poll.id, R])).length === 0)
+check('no se puede cambiar la pregunta', /cerrar/.test(await asErr(S, `update polls set question = 'Otra' where id=$1`, [poll.id])))
+check('otra persona no la cierra', (await as(R, `update polls set closed_at = now() where id=$1 returning 1`, [poll.id])).length === 0)
+check('su autor/a la cierra', !!(await as(S, `update polls set closed_at = now() where id=$1 returning closed_at`, [poll.id]))[0]?.closed_at)
+check('cerrada: no se vota', /cerrada/.test(await asErr(N2, `insert into poll_votes (poll_id, option) values ($1, 0)`, [poll.id])))
+check('ni se quita el voto', /cerrada/.test(await asErr(R, `delete from poll_votes where poll_id=$1`, [poll.id])))
+// En avisos: quien lo escribe o un admin, con varias respuestas
+const annP = (await as(A, `insert into announcements (title, group_ids) values ('Taller', $1) returning id`, [[raiz]]))[0].id
+check('en un aviso, solo su autor/a o un admin', !!(await asErr(S, `insert into polls (announcement_id, question, options) values ($1, 'x', '{a,b}')`, [annP])))
+const aPoll = (await mkPoll(A, 'announcement_id', annP, ['Sábado', 'Domingo'], true))[0]
+check('un admin la crea en su aviso', aPoll?.announcement_id === annP)
+await vote(S, aPoll.id, 0)
+await vote(S, aPoll.id, 1)
+check('varias respuestas: se guardan las dos', (await as(S, `select count(*)::int n from poll_votes where poll_id=$1 and user_id=$2`, [aPoll.id, S]))[0].n === 2)
+check('quien no ve el aviso no ve la encuesta', (await as(M, `select 1 from polls where id=$1`, [aPoll.id])).length === 0)
+check('una encuesta no puede ir en aviso y mensaje a la vez', !!(await asErr(A, `insert into polls (announcement_id, message_id, question, options) values ($1, $2, 'x', '{a,b}')`, [annP, pMsg])))
+await as(A, `delete from announcements where id=$1`, [annP])
+check('al borrar el aviso se borra la encuesta y sus votos', !(await one(`select 1 x from polls where id=$1`, [aPoll.id])) && !(await one(`select 1 x from poll_votes where poll_id=$1`, [aPoll.id])))
+
+console.log('Menciones y avisos de pedidos (0031)')
+await db.exec(readFileSync(`${ROOT}/migrations/0031_mentions_merch_push.sql`, 'utf8'))
+await db.exec(`delete from net.calls`)
+const men = (await as(S, `insert into chat_messages (group_id, body, mentions) values ($1, 'Hola @Rosa', $2) returning *`, [raiz, [R, R, S, M, T]]))[0]
+check('solo se guardan menciones a gente activa del grupo, sin repetir y sin quien escribe', men.mentions.join() === R)
+const mc = await calls()
+check('envía la notificación del chat y la de la mención', mc.some((c) => c.kind === 'chat' && c.id1 === men.id) && mc.some((c) => c.kind === 'chat_mention' && c.id1 === men.id))
+const mPush = (await as(null, `select push_prepare('s3cret', 'chat_mention', $1) p`, [men.id], 'anon'))[0].p
+check('"Sara te ha mencionado", solo a Rosa', mPush.title === 'Sara te ha mencionado' && mPush.subscriptions.map((x) => x.endpoint.split('/').pop()).join() === 'mem-r')
+const cPush = (await as(null, `select push_prepare('s3cret', 'chat', $1) p`, [men.id], 'anon'))[0].p
+check('la del chat ya no le llega a Rosa', !cPush.subscriptions.some((x) => x.endpoint.endsWith('/mem-r')))
+await db.exec(`delete from net.calls`)
+const plain = (await as(S, `insert into chat_messages (group_id, body) values ($1, 'Sin menciones') returning id`, [raiz]))[0].id
+check('sin menciones, solo la del chat', (await calls()).filter((c) => c.id1 === plain).map((c) => c.kind).join() === 'chat')
+check('la del chat de un mensaje con encuesta lo dice', (await as(null, `select push_prepare('s3cret', 'chat', $1) p`, [pMsg], 'anon'))[0].p.body === 'Sara ha creado una encuesta: ¿Quién viene al bolo?')
+// Pedidos
+const cap2 = (await as(A, `insert into merch_products (name, price_cents) values ('Chapa', 200) returning id`))[0]
+const ord = (await as(S, `insert into merch_orders (product_id, quantity) values ($1, 2) returning id`, [cap2.id]))[0]
+await db.exec(`delete from net.calls`)
+await as(A, `update merch_orders set status = 'ready' where id=$1`, [ord.id])
+check('al marcarlo como listo se avisa a quien lo pidió', (await calls()).some((c) => c.kind === 'merch_status' && c.id1 === ord.id))
+const sPush = (await as(null, `select push_prepare('s3cret', 'merch_status', $1) p`, [ord.id], 'anon'))[0].p
+check('"¡Tu pedido está listo!", solo a esa persona, abre Merch', sPush.title === '¡Tu pedido está listo!' && sPush.body === '2 × Chapa. Ya puedes recogerlo.' && sPush.url === '/trokoteca?tab=merch' && sPush.subscriptions.map((x) => x.endpoint.split('/').pop()).join() === 'mem-s')
+await db.exec(`delete from net.calls`)
+await as(A, `update merch_orders set status = 'delivered' where id=$1`, [ord.id])
+check('entregado no avisa', !(await calls()).some((c) => c.kind === 'merch_status'))
+const ord2 = (await as(S, `insert into merch_orders (product_id, quantity) values ($1, 1) returning id`, [cap2.id]))[0]
+await db.exec(`delete from net.calls`)
+await as(S, `update merch_orders set status = 'cancelled' where id=$1`, [ord2.id])
+check('si lo cancela quien lo pidió, no se le avisa', !(await calls()).some((c) => c.kind === 'merch_status'))
+const ord3 = (await as(S, `insert into merch_orders (product_id, quantity) values ($1, 1) returning id`, [cap2.id]))[0]
+await as(A, `update merch_orders set status = 'cancelled' where id=$1`, [ord3.id])
+check('si lo cancela un admin, sí', (await as(null, `select push_prepare('s3cret', 'merch_status', $1) p`, [ord3.id], 'anon'))[0].p.title === 'Pedido cancelado')
+check('el aviso de pedido nuevo para admins sigue igual', (await as(null, `select push_prepare('s3cret', 'merch_order', $1) p`, [ord3.id], 'anon'))[0].p.title === 'Nuevo pedido de merch')
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

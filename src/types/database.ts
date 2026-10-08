@@ -197,6 +197,36 @@ export type ChatMessage = {
   group_id: string
   author_id: string
   body: string
+  /** Personas mencionadas con @ (la base de datos deja solo las del grupo) */
+  mentions: string[]
+  created_at: string
+}
+
+export type ChatReaction = {
+  message_id: string
+  user_id: string
+  group_id: string
+  emoji: ReactionEmoji
+  created_at: string
+}
+
+/** Encuesta dentro de un aviso o de un mensaje del chat (uno de los dos) */
+export type Poll = {
+  id: string
+  announcement_id: string | null
+  message_id: string | null
+  question: string
+  options: string[]
+  multiple: boolean
+  closed_at: string | null
+  created_by: string
+  created_at: string
+}
+
+export type PollVote = {
+  poll_id: string
+  user_id: string
+  option: number
   created_at: string
 }
 
@@ -444,9 +474,30 @@ export type Database = {
       }
       chat_messages: {
         Row: ChatMessage
-        Insert: { id?: string; group_id: string; body: string }
+        Insert: { id?: string; group_id: string; body: string; mentions?: string[] }
         Update: never
         Relationships: [Rel<'chat_messages_author_id_fkey', 'author_id', 'profiles'>, Rel<'chat_messages_group_id_fkey', 'group_id', 'groups'>]
+      }
+      chat_reactions: {
+        Row: ChatReaction
+        Insert: { message_id: string; emoji: ReactionEmoji }
+        Update: { emoji: ReactionEmoji }
+        Relationships: [Rel<'chat_reactions_message_id_fkey', 'message_id', 'chat_messages'>, Rel<'chat_reactions_user_id_fkey', 'user_id', 'profiles'>]
+      }
+      polls: {
+        Row: Poll
+        Insert: { announcement_id?: string; message_id?: string; question: string; options: string[]; multiple?: boolean }
+        Update: { closed_at: string | null }
+        Relationships: [
+          Rel<'polls_announcement_id_fkey', 'announcement_id', 'announcements'>,
+          Rel<'polls_message_id_fkey', 'message_id', 'chat_messages'>,
+        ]
+      }
+      poll_votes: {
+        Row: PollVote
+        Insert: { poll_id: string; option: number }
+        Update: never
+        Relationships: [Rel<'poll_votes_poll_id_fkey', 'poll_id', 'polls'>, Rel<'poll_votes_user_id_fkey', 'user_id', 'profiles'>]
       }
       chat_photos: {
         Row: ChatPhoto

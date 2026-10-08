@@ -37,7 +37,7 @@ export const PERSIST_MAX_AGE = WEEK
  * v2: los emails de admin y las solicitudes de grupo se guardaban como Map (se perdían).
  * v3: los avisos llevan fotos y enlace.
  */
-export const PERSIST_BUSTER = 'v3'
+export const PERSIST_BUSTER = 'v4'
 
 /** Al cerrar sesión: borrar todo lo guardado para que no lo vea otra persona */
 export async function clearCachedData() {

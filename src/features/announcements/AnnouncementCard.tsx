@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { MessageCircle, Music, Pin, Play, TriangleAlert } from 'lucide-react'
+import { BarChart3, MessageCircle, Music, Pin, Play, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { formatWhen } from '@/lib/dates'
 import { Avatar } from '@/components/ui/Avatar'
@@ -64,6 +64,11 @@ export function AnnouncementCard({
         <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-accent">
           {link.kind === 'spotify' ? <Music className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
           {link.kind === 'spotify' ? 'Escuchar en Spotify' : link.kind === 'youtube' ? 'Vídeo de YouTube' : 'Enlace'}
+        </p>
+      )}
+      {item.hasPoll && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <BarChart3 className="size-4" aria-hidden /> Encuesta: ¡vota!
         </p>
       )}
       {item.birthday_of && (

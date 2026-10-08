@@ -9,6 +9,7 @@ import { useChatUnreadRealtime, useChatUnreadTotal } from '@/features/chat/unrea
 import { cn } from '@/lib/cn'
 import { useHideOnScroll, useKeyboardInset } from '@/lib/viewport'
 import { ProfileSheetProvider } from '@/features/profile/ProfileSheet'
+import { usePollsRealtime } from '@/features/polls/api'
 import { TabBar } from './TabBar'
 import { OfflineBanner } from './OfflineBanner'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -25,6 +26,7 @@ export function AppShell() {
   const wallNews = useWallNews()
   const chatUnread = useChatUnreadTotal()
   useChatUnreadRealtime()
+  usePollsRealtime()
   const scrolledDown = useHideOnScroll(pathname)
   const keyboard = useKeyboardInset()
   // iPhone: al cerrar el teclado lo fijo abajo a veces se queda a media pantalla
