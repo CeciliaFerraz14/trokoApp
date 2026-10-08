@@ -832,5 +832,18 @@ await db.exec(readFileSync(`${ROOT}/migrations/0027_group_mistura.sql`, 'utf8'))
 check('aplicarla otra vez no lo duplica', (await one(`select count(*)::int n from groups where name = 'Mistura'`)).n === 1)
 check('lo ven las cuentas activas para pedir entrar', (await as(S, `select id from groups where id=$1`, [mistura.id])).length === 1)
 
+console.log('Fotos de los grupos (0028)')
+await db.exec(readFileSync(`${ROOT}/migrations/0028_group_image_uploads.sql`, 'utf8'))
+const upG = (uid, name) => asErr(uid, `insert into storage.objects (bucket_id, name) values ('groups', $1)`, [name])
+check('un admin sube la foto de un grupo', !(await upG(A, `${raiz}/1700000000000.jpg`)))
+check('un miembro no', !!(await upG(S, `${raiz}/1700000000001.jpg`)))
+check('un miembro no borra fotos', (await as(S, `delete from storage.objects where bucket_id = 'groups' returning 1`)).length === 0)
+const url = `https://qkbncnflfbwbpfbsywbq.supabase.co/storage/v1/object/public/groups/${raiz}/1700000000000.jpg`
+check('el grupo puede usar esa foto', (await as(A, `update groups set image = $1 where id=$2 returning image`, [url, raiz]))[0]?.image === url)
+check('los logos de la app siguen valiendo', !(await asErr(A, `update groups set image = '/groups/raiz.png' where id=$1`, [raiz])))
+check('una URL de otra web no', !!(await asErr(A, `update groups set image = 'https://malo.example/groups/x.jpg' where id=$1`, [raiz])))
+check('ni de otro bucket', !!(await asErr(A, `update groups set image = $1 where id=$2`, [url.replace('/public/groups/', '/public/avatars/'), raiz])))
+check('un miembro no cambia la foto del grupo', (await as(S, `update groups set image = null where id=$1 returning 1`, [raiz])).length === 0)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

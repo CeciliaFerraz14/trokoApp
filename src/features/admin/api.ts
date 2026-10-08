@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { compressImage } from '@/lib/image'
 import type { AccountStatus, AppRole, Group, GroupRole, Profile } from '@/types/database'
 
 export function usePendingUsers({ enabled = true } = {}) {
@@ -119,7 +120,25 @@ export function useSetMembership() {
   })
 }
 
-export type GroupInput = Pick<Group, 'name' | 'description' | 'color' | 'sort_order' | 'schedule'>
+export type GroupInput = Pick<Group, 'name' | 'description' | 'color' | 'sort_order' | 'schedule' | 'image'>
+
+const GROUPS_BUCKET = 'groups'
+
+/** Sube la foto de un grupo (cuadrada, 512 px) al bucket público 'groups' y devuelve su URL */
+export async function uploadGroupImage(groupId: string, file: File) {
+  const { blob } = await compressImage(file, { maxSize: 512, quality: 0.9, square: true })
+  // Nombre nuevo en cada cambio: así ningún móvil sigue enseñando la anterior de su caché
+  const path = `${groupId}/${Date.now()}.jpg`
+  const { error } = await supabase.storage.from(GROUPS_BUCKET).upload(path, blob, { contentType: 'image/jpeg' })
+  if (error) throw error
+  return supabase.storage.from(GROUPS_BUCKET).getPublicUrl(path).data.publicUrl
+}
+
+/** Borra una foto subida que ya no se usa (los logos de la app, /groups/…, no se tocan) */
+export async function removeGroupImageFile(url: string | null | undefined) {
+  const path = url?.split(`/storage/v1/object/public/${GROUPS_BUCKET}/`)[1]
+  if (path) await supabase.storage.from(GROUPS_BUCKET).remove([path])
+}
 
 export function useSaveGroup() {
   const qc = useQueryClient()
