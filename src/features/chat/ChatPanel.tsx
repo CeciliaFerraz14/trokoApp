@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useMe } from '@/features/auth/useMe'
 import { displayName } from '@/features/groups/api'
 import { JoinRequestButton } from '@/features/groups/JoinRequestButton'
+import { useOpenProfile } from '@/features/profile/ProfileSheet'
 import { PhotoGrid } from '@/features/wall/PhotoGrid'
 import { useChat, useChatRealtime, useDeleteMessage, useSendMessage, type ChatItem } from './api'
 import { useMarkChatRead } from './unread'
@@ -154,6 +155,8 @@ function Message({
   deleting: boolean
 }) {
   const time = format(new Date(m.created_at), 'H:mm')
+  const openProfile = useOpenProfile()
+  const author = m.author
   // Tocar el mensaje muestra "Borrar" (salvo al tocar un enlace o una foto)
   const onClick = (e: MouseEvent) => {
     if (canDelete && !(e.target as HTMLElement).closest('a, button')) onSelect()
@@ -162,7 +165,18 @@ function Message({
   return (
     <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start', first ? 'mt-3' : 'mt-1')}>
       {!mine &&
-        (first ? <Avatar name={m.author?.full_name ?? '?'} url={m.author?.avatar_url} size="sm" /> : <span className="w-9 shrink-0" aria-hidden />)}
+        (first ? (
+          // La foto abre su ficha (si la cuenta sigue existiendo)
+          author ? (
+            <button type="button" onClick={() => openProfile(author)} aria-label={`Ver el perfil de ${displayName(author)}`} className="shrink-0 rounded-full">
+              <Avatar name={author.full_name} url={author.avatar_url} size="sm" />
+            </button>
+          ) : (
+            <Avatar name="?" size="sm" />
+          )
+        ) : (
+          <span className="w-9 shrink-0" aria-hidden />
+        ))}
       <div className={cn('flex max-w-[80%] min-w-0 flex-col', mine ? 'items-end' : 'items-start')}>
         <div
           onClick={onClick}
@@ -172,7 +186,17 @@ function Message({
             m.photos.length > 0 && 'w-64 max-w-full',
           )}
         >
-          {!mine && first && <p className="text-sm font-semibold text-accent">{m.author ? displayName(m.author) : 'Cuenta eliminada'}</p>}
+          {!mine && first && (
+            <p className="text-sm font-semibold text-accent">
+              {author ? (
+                <button type="button" onClick={() => openProfile(author)}>
+                  {displayName(author)}
+                </button>
+              ) : (
+                'Cuenta eliminada'
+              )}
+            </p>
+          )}
           <PhotoGrid photos={m.photos} bucket="chat" />
           {m.body && <Linkify text={m.body} />}
           <p className={cn('text-right text-xs', mine ? 'text-brand-black/70' : 'text-muted')}>

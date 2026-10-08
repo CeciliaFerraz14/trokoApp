@@ -16,6 +16,8 @@ export type Profile = {
   nickname: string | null
   avatar_url: string | null
   instruments: string[]
+  /** "Sobre mí": descripción corta que se ve en su ficha */
+  bio: string | null
   role: AppRole
   status: AccountStatus
   approved_at: string | null

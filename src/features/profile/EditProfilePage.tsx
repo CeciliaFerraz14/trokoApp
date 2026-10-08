@@ -9,7 +9,7 @@ import { INSTRUMENTS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { FormError, TextField } from '@/components/ui/Field'
+import { FormError, TextArea, TextField } from '@/components/ui/Field'
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { Spinner } from '@/components/ui/States'
 import { useToast } from '@/components/ui/Toast'
@@ -32,6 +32,7 @@ function EditProfileForm({ profile, birthday }: { profile: Profile; birthday: Pi
 
   const [fullName, setFullName] = useState(profile.full_name)
   const [nickname, setNickname] = useState(profile.nickname ?? '')
+  const [bio, setBio] = useState(profile.bio ?? '')
   const [instruments, setInstruments] = useState<string[]>(profile.instruments)
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url)
   const [birthDate, setBirthDate] = useState(birthday?.birth_date ?? '')
@@ -76,6 +77,7 @@ function EditProfileForm({ profile, birthday }: { profile: Profile; birthday: Pi
       .update({
         full_name: fullName.trim(),
         nickname: nickname.trim() || null,
+        bio: bio.trim() || null,
         instruments,
         avatar_url: avatarUrl,
       })
@@ -95,6 +97,7 @@ function EditProfileForm({ profile, birthday }: { profile: Profile; birthday: Pi
     setSaving(false)
     await qc.invalidateQueries({ queryKey: ['me'] })
     await qc.invalidateQueries({ queryKey: ['group-members'] })
+    void qc.invalidateQueries({ queryKey: ['person-card', profile.id] })
     toast('Perfil guardado')
     navigate('/perfil')
   }
@@ -128,6 +131,16 @@ function EditProfileForm({ profile, birthday }: { profile: Profile; birthday: Pi
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             maxLength={40}
+          />
+
+          <TextArea
+            label="Sobre mí"
+            hint={`Lo verá la gente al tocar tu foto en el chat o en los miembros del grupo. ${bio.length}/300`}
+            placeholder="Desde cuándo tocas, qué te gusta de la batucada…"
+            rows={3}
+            maxLength={300}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
           />
 
           <fieldset>

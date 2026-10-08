@@ -39,6 +39,7 @@ export function ProfilePage() {
           <h2 className="mt-3 text-2xl font-bold">{profile.nickname || profile.full_name}</h2>
           {profile.nickname && <p className="text-muted">{profile.full_name}</p>}
           {me.isAdmin && <Badge tone="brand" className="mt-2">Admin</Badge>}
+          {profile.bio && <p className="mt-3 max-w-sm break-words whitespace-pre-line">{profile.bio}</p>}
           {profile.instruments.length > 0 && (
             <div className="mt-3 flex flex-wrap justify-center gap-1.5">
               {profile.instruments.map((i) => (

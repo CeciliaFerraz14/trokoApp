@@ -816,5 +816,13 @@ console.log('Colores de los grupos (0025)')
 await db.exec(readFileSync(`${ROOT}/migrations/0025_group_colors.sql`, 'utf8'))
 check('cada grupo con el color de su logo', (await one(`select color from groups where name = 'Timbau'`)).color === '#8E3FB0' && (await one(`select count(*)::int n from groups where color in ('#F1AC0F', '#E6551E', '#94CE2E', '#0BBBEE', '#8E3FB0')`)).n === 5)
 
+console.log('Sobre mí (0026)')
+await db.exec(readFileSync(`${ROOT}/migrations/0026_profile_bio.sql`, 'utf8'))
+check('cada cual escribe su descripción', (await as(S, `update profiles set bio = 'Toco la caja desde 2019' where id=$1 returning bio`, [S]))[0]?.bio === 'Toco la caja desde 2019')
+check('la ven las demás cuentas activas', (await as(R, `select bio from profiles where id=$1`, [S]))[0]?.bio === 'Toco la caja desde 2019')
+check('una cuenta pendiente no', (await as(T, `select bio from profiles where id=$1`, [S])).length === 0)
+check('nadie cambia la de otra persona', (await as(R, `update profiles set bio = 'x' where id=$1 returning 1`, [S])).length === 0)
+check('máximo 300 caracteres', !!(await asErr(S, `update profiles set bio = repeat('a', 301) where id=$1`, [S])))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

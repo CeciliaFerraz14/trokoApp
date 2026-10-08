@@ -8,6 +8,7 @@ import { useWallNews } from '@/features/wall/news'
 import { useChatUnreadRealtime, useChatUnreadTotal } from '@/features/chat/unread'
 import { cn } from '@/lib/cn'
 import { useHideOnScroll, useKeyboardInset } from '@/lib/viewport'
+import { ProfileSheetProvider } from '@/features/profile/ProfileSheet'
 import { TabBar } from './TabBar'
 import { OfflineBanner } from './OfflineBanner'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -33,17 +34,19 @@ export function AppShell() {
   }, [keyboard])
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      {/* Espacio inferior = altura de la barra + safe area */}
-      <main className={cn('flex-1', inChat ? 'pb-safe' : 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
-        <ErrorBoundary resetKey={pathname}>
-          <Suspense fallback={<Spinner />}>
-            <Outlet />
-          </Suspense>
-        </ErrorBoundary>
-      </main>
-      <OfflineBanner />
-      {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size + chatUnread} hidden={scrolledDown || !!keyboard} />}
-    </div>
+    <ProfileSheetProvider>
+      <div className="flex min-h-dvh flex-col">
+        {/* Espacio inferior = altura de la barra + safe area */}
+        <main className={cn('flex-1', inChat ? 'pb-safe' : 'pb-[calc(6rem+env(safe-area-inset-bottom))]')}>
+          <ErrorBoundary resetKey={pathname}>
+            <Suspense fallback={<Spinner />}>
+              <Outlet />
+            </Suspense>
+          </ErrorBoundary>
+        </main>
+        <OfflineBanner />
+        {!inChat && <TabBar isAdmin={isAdmin} pendingCount={(pending.data?.length ?? 0) + (requests.data?.length ?? 0)} unreadCount={unread} wallNews={wallNews.size + chatUnread} hidden={scrolledDown || !!keyboard} />}
+      </div>
+    </ProfileSheetProvider>
   )
 }

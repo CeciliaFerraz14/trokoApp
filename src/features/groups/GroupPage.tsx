@@ -13,6 +13,7 @@ import { WallFeed } from '@/features/wall/WallFeed'
 import { useGallery, useWallRealtime } from '@/features/wall/api'
 import { useEvents } from '@/features/calendar/api'
 import { useMe } from '@/features/auth/useMe'
+import { useOpenProfile } from '@/features/profile/ProfileSheet'
 import { InviteCard } from './InviteCard'
 import { displayName, useGroup, useGroupMembers } from './api'
 
@@ -102,6 +103,7 @@ export function GroupPage() {
 
 function MembersList({ groupId }: { groupId: string }) {
   const members = useGroupMembers(groupId)
+  const openProfile = useOpenProfile()
   if (members.isPending) return <SkeletonList count={5} className="h-14" />
   if (members.isError) return <ErrorState error={members.error} onRetry={() => members.refetch()} />
   if (!members.data.length) {
@@ -119,13 +121,16 @@ function MembersList({ groupId }: { groupId: string }) {
       </p>
       <ul className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
         {members.data.map(({ profile, role }) => (
-          <li key={profile.id} className="flex min-h-16 items-center gap-3 px-4 py-2">
-            <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{displayName(profile)}</p>
-              {profile.instruments.length > 0 && <p className="truncate text-sm text-muted">{profile.instruments.join(' · ')}</p>}
-            </div>
-            {role === 'coordinator' && <Badge tone="brand">Coordina</Badge>}
+          <li key={profile.id}>
+            {/* Tocar a alguien abre su ficha */}
+            <button type="button" onClick={() => openProfile(profile)} className="flex min-h-16 w-full items-center gap-3 px-4 py-2 text-left hover:bg-surface-2">
+              <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{displayName(profile)}</p>
+                {profile.instruments.length > 0 && <p className="truncate text-sm text-muted">{profile.instruments.join(' · ')}</p>}
+              </div>
+              {role === 'coordinator' && <Badge tone="brand">Coordina</Badge>}
+            </button>
           </li>
         ))}
       </ul>
