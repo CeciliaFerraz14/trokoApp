@@ -782,5 +782,27 @@ await write(R, raiz, 'Bienvenido')
 check('pero sí los nuevos', (await unreadOf(N2, raiz)) === 1)
 check('anon no puede', !!(await asErr(null, `select * from my_chat_unread()`, [], 'anon')) && !!(await asErr(null, `select mark_chat_read($1)`, [raiz], 'anon')))
 
+console.log('Comentarios en felicitaciones (0022)')
+await db.exec(readFileSync(`${ROOT}/migrations/0022_birthday_comments.sql`, 'utf8'))
+// Felicitación de Mar (grupo Brote) del 28-02-2027
+const mAnn = (await one(`select id from announcements where birthday_of = $1 order by birthday_on limit 1`, [M])).id
+const bMate = (await one(`select m.user_id from group_members m join profiles p on p.id = m.user_id where m.group_id = $1 and m.user_id <> $2 and p.status = 'active' and p.role <> 'admin' limit 1`, [brote, M])).user_id
+const comment = (u, ann, body) => as(u, `insert into announcement_comments (announcement_id, body, author_id) values ($1, $2, $3) returning *`, [ann, body, A])
+const c1 = (await comment(bMate, mAnn, '  ¡Felicidades! 🎉  '))[0]
+check('alguien de su grupo comenta la felicitación (autor y texto los pone la base de datos)', c1?.author_id === bMate && c1.body === '¡Felicidades! 🎉')
+check('quien cumple años también puede contestar', (await comment(M, mAnn, '¡Gracias!')).length === 1)
+check('en un aviso normal no se puede comentar', !!(await asErr(A, `insert into announcement_comments (announcement_id, body) values ($1, 'hola')`, [aAnn])))
+check('fuera de sus grupos no se puede comentar', !!(await asErr(N2, `insert into announcement_comments (announcement_id, body) values ($1, 'hola')`, [mAnn])))
+check('ni ver los comentarios', (await as(N2, `select id from announcement_comments`)).length === 0)
+check('una cuenta pendiente no comenta', !!(await asErr(T, `insert into announcement_comments (announcement_id, body) values ($1, 'hola')`, [mAnn])))
+check('comentario vacío rechazado', !!(await asErr(M, `insert into announcement_comments (announcement_id, body) values ($1, '   ')`, [mAnn])))
+check('el grupo ve los comentarios', (await as(M, `select id from announcement_comments where announcement_id=$1`, [mAnn])).length === 2)
+check('no se pueden editar', (await as(bMate, `update announcement_comments set body = 'x' where id=$1 returning 1`, [c1.id])).length === 0)
+check('nadie borra el comentario de otra persona', (await as(M, `delete from announcement_comments where id=$1 returning 1`, [c1.id])).length === 0)
+check('un admin sí', (await as(A, `delete from announcement_comments where id=$1 returning 1`, [c1.id])).length === 1)
+const c2 = (await comment(bMate, mAnn, 'Otra vez'))[0]
+check('y su autor/a también', (await as(bMate, `delete from announcement_comments where id=$1 returning 1`, [c2.id])).length === 1)
+check('anon no ve nada', !!(await asErr(null, `select * from announcement_comments`, [], 'anon')) || (await as(null, `select * from announcement_comments`, [], 'anon')).length === 0)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

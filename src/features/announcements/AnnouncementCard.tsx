@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Music, Pin, Play, TriangleAlert } from 'lucide-react'
+import { MessageCircle, Music, Pin, Play, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { formatWhen } from '@/lib/dates'
 import { Avatar } from '@/components/ui/Avatar'
@@ -64,6 +64,12 @@ export function AnnouncementCard({
         <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-accent">
           {link.kind === 'spotify' ? <Music className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
           {link.kind === 'spotify' ? 'Escuchar en Spotify' : link.kind === 'youtube' ? 'Vídeo de YouTube' : 'Enlace'}
+        </p>
+      )}
+      {item.birthday_of && (
+        <p className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-accent">
+          <MessageCircle className="size-4" aria-hidden />
+          {!item.commentCount ? 'Felicitar' : item.commentCount === 1 ? '1 felicitación' : `${item.commentCount} felicitaciones`}
         </p>
       )}
       <div className="mt-3 flex items-center gap-2 text-sm text-muted">

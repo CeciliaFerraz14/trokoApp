@@ -162,6 +162,15 @@ export type PostPhoto = {
   created_at: string
 }
 
+/** Comentario en una felicitación de cumpleaños (solo en esos avisos) */
+export type AnnouncementComment = {
+  id: string
+  announcement_id: string
+  author_id: string
+  body: string
+  created_at: string
+}
+
 export type PostComment = {
   id: string
   post_id: string
@@ -359,6 +368,15 @@ export type Database = {
         Relationships: [
           Rel<'announcement_reads_announcement_id_fkey', 'announcement_id', 'announcements'>,
           Rel<'announcement_reads_user_id_fkey', 'user_id', 'profiles'>,
+        ]
+      }
+      announcement_comments: {
+        Row: AnnouncementComment
+        Insert: { announcement_id: string; body: string }
+        Update: never
+        Relationships: [
+          Rel<'announcement_comments_announcement_id_fkey', 'announcement_id', 'announcements'>,
+          Rel<'announcement_comments_author_id_fkey', 'author_id', 'profiles'>,
         ]
       }
       events: {

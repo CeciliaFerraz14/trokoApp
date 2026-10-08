@@ -19,6 +19,7 @@ import { VideoPreview } from '@/features/wall/VideoPreview'
 import { parseVideo } from '@/features/wall/video'
 import { canEditAnnouncement, useAnnouncement, useDeleteAnnouncement, useMarkRead, useSaveAnnouncement } from './api'
 import { BirthdayBanner } from './BirthdayBanner'
+import { BirthdayComments } from './BirthdayComments'
 
 export function AnnouncementDetailPage() {
   const { id } = useParams()
@@ -119,6 +120,9 @@ export function AnnouncementDetailPage() {
             <Audience groupIds={a.group_ids} groups={groupMap} />
           </Card>
         </article>
+
+        {/* Solo en las felicitaciones se puede comentar */}
+        {a.birthday_of && <BirthdayComments announcementId={a.id} />}
 
         {canEdit && (
           <section className="space-y-3">
