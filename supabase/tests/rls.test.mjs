@@ -807,6 +807,8 @@ check('anon no ve nada', !!(await asErr(null, `select * from announcement_commen
 console.log('Imagen de los grupos (0023)')
 await db.exec(readFileSync(`${ROOT}/migrations/0023_group_images.sql`, 'utf8'))
 check('Semilla, Brote, Raíz y Bloco tienen su imagen', (await one(`select count(*)::int n from groups where image is not null`)).n === 4)
+await db.exec(readFileSync(`${ROOT}/migrations/0024_timbau_image.sql`, 'utf8'))
+check('y Timbau también (0024)', (await one(`select image from groups where name = 'Timbau'`)).image === '/groups/timbau.png')
 check('los miembros la ven', (await as(M, `select image from groups where id=$1`, [brote]))[0]?.image === '/groups/brote.png')
 check('solo rutas de la app', !!(await asErr(A, `update groups set image = 'https://malo.example/x.png' where id=$1`, [raiz])))
 
