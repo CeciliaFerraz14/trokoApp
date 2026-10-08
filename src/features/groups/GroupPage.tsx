@@ -47,6 +47,7 @@ export function GroupPage() {
           </span>
         }
         back
+        color={g.color}
         actions={
           me?.canManageGroup(g.id) && (
             <HeaderLink to={`/muro/${g.id}?tab=miembros`} label="Invitar al grupo">

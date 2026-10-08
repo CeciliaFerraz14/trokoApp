@@ -2,6 +2,7 @@
 export const INSTRUMENTS = ['Fondo 1', 'Fondo 2', 'Surdo 3', 'Repique', 'Caja', 'Timbau'] as const
 
 export const GROUP_COLORS = [
-  '#6CB8E6', '#29B6F6', '#039BE5', '#9ADCF7', '#8BC34A', '#9CCC65',
-  '#9FA8DA', '#F48FB1', '#FF8A3D', '#FFD54F', '#BDBDBD', '#4DD0E1',
+  // Los cinco primeros son los fondos de los logos de Semilla, Raíz, Brote, Bloco y Timbau
+  '#F1AC0F', '#E6551E', '#94CE2E', '#0BBBEE', '#8E3FB0', '#6CB8E6',
+  '#F48FB1', '#9FA8DA', '#4DD0E1', '#FFD54F', '#9CCC65', '#BDBDBD',
 ]

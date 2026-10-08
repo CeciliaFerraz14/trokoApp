@@ -1,5 +1,6 @@
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { needsLightText } from '@/lib/color'
 import type { Group } from '@/types/database'
 
 /** Chips seleccionables de grupos */
@@ -24,7 +25,7 @@ export function GroupPicker({
             onClick={() => onToggle(g.id)}
             className={cn(
               'inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-sm font-bold transition-colors',
-              on ? 'border-transparent text-black' : 'border-line bg-surface-2 text-fg',
+              on ? cn('border-transparent', needsLightText(g.color) ? 'text-white' : 'text-black') : 'border-line bg-surface-2 text-fg',
             )}
             style={on ? { backgroundColor: g.color } : undefined}
           >

@@ -812,5 +812,9 @@ check('y Timbau también (0024)', (await one(`select image from groups where nam
 check('los miembros la ven', (await as(M, `select image from groups where id=$1`, [brote]))[0]?.image === '/groups/brote.png')
 check('solo rutas de la app', !!(await asErr(A, `update groups set image = 'https://malo.example/x.png' where id=$1`, [raiz])))
 
+console.log('Colores de los grupos (0025)')
+await db.exec(readFileSync(`${ROOT}/migrations/0025_group_colors.sql`, 'utf8'))
+check('cada grupo con el color de su logo', (await one(`select color from groups where name = 'Timbau'`)).color === '#8E3FB0' && (await one(`select count(*)::int n from groups where color in ('#F1AC0F', '#E6551E', '#94CE2E', '#0BBBEE', '#8E3FB0')`)).n === 5)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)
