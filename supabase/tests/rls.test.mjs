@@ -824,5 +824,13 @@ check('una cuenta pendiente no', (await as(T, `select bio from profiles where id
 check('nadie cambia la de otra persona', (await as(R, `update profiles set bio = 'x' where id=$1 returning 1`, [S])).length === 0)
 check('máximo 300 caracteres', !!(await asErr(S, `update profiles set bio = repeat('a', 301) where id=$1`, [S])))
 
+console.log('Grupo Mistura (0027)')
+await db.exec(readFileSync(`${ROOT}/migrations/0027_group_mistura.sql`, 'utf8'))
+const mistura = await one(`select * from groups where name = 'Mistura'`)
+check('existe con su horario, color y logo', mistura?.schedule === 'Martes 11:30' && mistura.color === '#56CBC6' && mistura.image === '/groups/mistura.png')
+await db.exec(readFileSync(`${ROOT}/migrations/0027_group_mistura.sql`, 'utf8'))
+check('aplicarla otra vez no lo duplica', (await one(`select count(*)::int n from groups where name = 'Mistura'`)).n === 1)
+check('lo ven las cuentas activas para pedir entrar', (await as(S, `select id from groups where id=$1`, [mistura.id])).length === 1)
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)
