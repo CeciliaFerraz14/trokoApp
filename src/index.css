@@ -42,7 +42,7 @@
   --surface-2: #1d1d21;
   --line: #2c2c31;
   --fg: #f4f4f5;
-  --muted: #a1a1aa;
+  --muted: #c2c2ca; /* gris de textos secundarios: más claro = se lee mejor sobre negro */
   --accent: #6cb8e6; /* azul de marca para texto/iconos: 9.6:1 sobre negro */
   --chrome: #000000; /* cabecera y barra de navegación */
   --danger: #ff7a7a;
@@ -63,7 +63,7 @@
   --surface-2: #eaeef2;
   --line: #d9dfe5;
   --fg: #0b0b0c;
-  --muted: #5a6470;
+  --muted: #424b56;
   --accent: #1c6e9f; /* azul de marca oscurecido: el celeste no contrasta sobre blanco */
   --chrome: #000000;
   --danger: #c62828;
@@ -94,6 +94,8 @@
   /* Sin fondo propio: el color va en <html> y encima el motivo (TribalPattern) */
   body {
     @apply font-sans text-fg antialiased;
+    /* Texto general algo más grueso que el normal (400): la Nunito fina se leía poco */
+    font-weight: 500;
     min-height: 100dvh;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
