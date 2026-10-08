@@ -57,7 +57,7 @@ export function ProfilePage() {
               {memberships.map(({ group, role }) => (
                 <li key={group.id}>
                   <Link to={`/muro/${group.id}`} className="flex min-h-14 items-center gap-3 px-4 py-2 hover:bg-surface-2">
-                    <GroupDot color={group.color} className="size-4" />
+                    <GroupDot color={group.color} image={group.image} className="size-4" imageClassName="size-8" />
                     <span className="flex-1 font-semibold">{group.name}</span>
                     {role === 'coordinator' && <Badge tone="brand">Coordina</Badge>}
                     <ChevronRight className="size-5 text-muted" />

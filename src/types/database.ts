@@ -28,6 +28,8 @@ export type Group = {
   name: string
   description: string | null
   color: string
+  /** Logo del grupo (archivo de la app en public/groups/); sin él se usa el color */
+  image: string | null
   sort_order: number
   schedule: string | null
   archived_at: string | null

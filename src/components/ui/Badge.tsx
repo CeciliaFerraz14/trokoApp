@@ -16,7 +16,21 @@ export function Badge({ children, tone = 'neutral', className }: { children: Rea
   )
 }
 
-/** Punto de color de un grupo */
-export function GroupDot({ color, className }: { color: string; className?: string }) {
+/**
+ * Icono de un grupo: su logo redondo o, si no tiene, un punto de su color.
+ * El logo no baja de size-5 (más pequeño no se distingue): `imageClassName` lo agranda.
+ */
+export function GroupDot({
+  color,
+  image,
+  className,
+  imageClassName = 'size-5',
+}: {
+  color: string
+  image?: string | null
+  className?: string
+  imageClassName?: string
+}) {
+  if (image) return <img src={image} alt="" aria-hidden className={cn('inline-block shrink-0 rounded-full object-cover', imageClassName)} />
   return <span aria-hidden className={cn('inline-block size-3 shrink-0 rounded-full', className)} style={{ backgroundColor: color }} />
 }

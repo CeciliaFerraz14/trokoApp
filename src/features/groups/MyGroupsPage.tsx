@@ -4,7 +4,7 @@ import { BellRing, ChevronRight, MessageCircle, UsersRound, X } from 'lucide-rea
 import { Page, PageHeader } from '@/components/ui/PageHeader'
 import { SectionTitle } from '@/components/ui/Card'
 import { EmptyState, SkeletonList } from '@/components/ui/States'
-import { Badge } from '@/components/ui/Badge'
+import { Badge, GroupDot } from '@/components/ui/Badge'
 import { useMe } from '@/features/auth/useMe'
 import { useWallNews } from '@/features/wall/news'
 import { useChatUnread } from '@/features/chat/unread'
@@ -41,6 +41,7 @@ export function MyGroupsPage() {
                   className="flex min-h-20 items-center gap-4 overflow-hidden rounded-[1.4rem] border border-(--card-border) bg-surface p-4 hover:border-brand-blue"
                   style={{ boxShadow: `inset 6px 0 0 ${group.color}` }}
                 >
+                  {group.image && <GroupDot color={group.color} image={group.image} imageClassName="size-14" />}
                   <div className="min-w-0 flex-1 pl-1">
                     <p className="font-display text-2xl font-bold">{group.name}</p>
                     {group.schedule && <p className="truncate text-sm text-muted">{group.schedule}</p>}
@@ -77,12 +78,16 @@ export function MyGroupsPage() {
                     {/* Un admin puede abrir cualquier grupo; el resto pide entrar */}
                     {me?.isAdmin ? (
                       <Link to={`/muro/${g.id}`} className="flex items-center gap-4 pl-1">
+                        {g.image && <GroupDot color={g.color} image={g.image} imageClassName="size-12" />}
                         <GroupInfo name={g.name} schedule={g.schedule} description={g.description} />
                         <ChevronRight className="size-5 shrink-0 text-muted" />
                       </Link>
                     ) : (
                       <div className="space-y-3 pl-1">
-                        <GroupInfo name={g.name} schedule={g.schedule} description={g.description} />
+                        <div className="flex items-center gap-4">
+                          {g.image && <GroupDot color={g.color} image={g.image} imageClassName="size-12" />}
+                          <GroupInfo name={g.name} schedule={g.schedule} description={g.description} />
+                        </div>
                         <JoinRequestButton groupId={g.id} groupName={g.name} compact />
                       </div>
                     )}

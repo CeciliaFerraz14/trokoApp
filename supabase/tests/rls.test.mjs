@@ -804,5 +804,11 @@ const c2 = (await comment(bMate, mAnn, 'Otra vez'))[0]
 check('y su autor/a también', (await as(bMate, `delete from announcement_comments where id=$1 returning 1`, [c2.id])).length === 1)
 check('anon no ve nada', !!(await asErr(null, `select * from announcement_comments`, [], 'anon')) || (await as(null, `select * from announcement_comments`, [], 'anon')).length === 0)
 
+console.log('Imagen de los grupos (0023)')
+await db.exec(readFileSync(`${ROOT}/migrations/0023_group_images.sql`, 'utf8'))
+check('Semilla, Brote, Raíz y Bloco tienen su imagen', (await one(`select count(*)::int n from groups where image is not null`)).n === 4)
+check('los miembros la ven', (await as(M, `select image from groups where id=$1`, [brote]))[0]?.image === '/groups/brote.png')
+check('solo rutas de la app', !!(await asErr(A, `update groups set image = 'https://malo.example/x.png' where id=$1`, [raiz])))
+
 console.log(`\n${pass} OK, ${fail} fallos`)
 process.exit(fail ? 1 : 0)

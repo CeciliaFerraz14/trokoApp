@@ -213,7 +213,7 @@ export interface JoinRequestRow {
   user_id: string
   created_at: string
   profile: Pick<Profile, 'id' | 'full_name' | 'nickname' | 'avatar_url'> | null
-  group: Pick<Group, 'id' | 'name' | 'color'> | null
+  group: Pick<Group, 'id' | 'name' | 'color' | 'image'> | null
 }
 
 export function useJoinRequests({ enabled = true } = {}) {
@@ -222,7 +222,7 @@ export function useJoinRequests({ enabled = true } = {}) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('group_join_requests')
-        .select('group_id, user_id, created_at, profile:profiles(id, full_name, nickname, avatar_url), group:groups(id, name, color)')
+        .select('group_id, user_id, created_at, profile:profiles(id, full_name, nickname, avatar_url), group:groups(id, name, color, image)')
         .eq('status', 'pending')
         .order('created_at')
       if (error) throw error

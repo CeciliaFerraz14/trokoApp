@@ -81,7 +81,7 @@ function JoinRequestCard({ request }: { request: JoinRequestRow }) {
           <p className="truncate font-semibold">{name}</p>
           <p className="flex items-center gap-1.5 text-sm text-muted">
             quiere entrar en
-            {request.group && <GroupDot color={request.group.color} className="size-2.5" />}
+            {request.group && <GroupDot color={request.group.color} image={request.group.image} className="size-2.5" />}
             <strong className="text-fg">{group}</strong>
           </p>
           <p className="text-xs text-muted">{formatDistanceToNow(new Date(request.created_at), { addSuffix: true, locale: es })}</p>

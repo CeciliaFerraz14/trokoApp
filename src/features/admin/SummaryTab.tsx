@@ -83,7 +83,7 @@ export function SummaryTab() {
             {groups.data.map((g) => (
               <li key={g.id}>
                 <Link to={`/muro/${g.id}?tab=miembros`} className="flex min-h-12 items-center gap-3 px-4 hover:bg-surface-2">
-                  <GroupDot color={g.color} />
+                  <GroupDot color={g.color} image={g.image} />
                   <span className="flex-1 font-semibold">{g.name}</span>
                   <span className="flex items-center gap-1 text-muted">
                     <UserRound className="size-4" aria-hidden /> {counts.get(g.id) ?? 0}

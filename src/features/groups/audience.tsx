@@ -139,7 +139,7 @@ export function Audience({ groupIds, groups, className }: { groupIds: string[]; 
     <span className={cn('flex flex-wrap items-center gap-x-3 gap-y-1', className)}>
       {named.map((g) => (
         <span key={g.id} className="inline-flex items-center gap-1.5">
-          <GroupDot color={g.color} className="size-2.5" />
+          <GroupDot color={g.color} image={g.image} className="size-2.5" />
           {g.name}
         </span>
       ))}

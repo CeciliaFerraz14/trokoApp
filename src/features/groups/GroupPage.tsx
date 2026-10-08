@@ -42,7 +42,7 @@ export function GroupPage() {
         title={g.name}
         subtitle={
           <span className="flex items-center gap-1.5">
-            <GroupDot color={g.color} className="ring-2 ring-brand-black/20" />
+            <GroupDot color={g.color} image={g.image} className="ring-2 ring-brand-black/20" />
             {g.schedule || 'Grupo'}
           </span>
         }

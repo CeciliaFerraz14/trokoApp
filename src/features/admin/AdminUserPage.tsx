@@ -115,7 +115,7 @@ export function AdminUserPage() {
               return (
                 <li key={g.id} className="px-4 py-3">
                   <p className="mb-2 flex items-center gap-2 font-semibold">
-                    <GroupDot color={g.color} /> {g.name}
+                    <GroupDot color={g.color} image={g.image} /> {g.name}
                   </p>
                   <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-sm">
                     {([

@@ -104,7 +104,7 @@ export function PeopleTab() {
               .filter((g) => !g.archived_at)
               .map((g) => (
                 <button key={g.id} onClick={() => setGroupId(g.id)} className={chip(groupId === g.id)}>
-                  <GroupDot color={g.color} className="size-2.5" />
+                  <GroupDot color={g.color} image={g.image} className="size-2.5" />
                   {g.name}
                 </button>
               ))}
@@ -136,7 +136,7 @@ export function PeopleTab() {
                     {u.memberships.length
                       ? u.memberships.map((m) => {
                           const g = groupById.get(m.group_id)
-                          return g ? <GroupDot key={m.group_id} color={g.color} className="size-2.5" /> : null
+                          return g ? <GroupDot key={m.group_id} color={g.color} image={g.image} className="size-2.5" /> : null
                         })
                       : 'Sin grupo'}
                     {isInstagram ? (

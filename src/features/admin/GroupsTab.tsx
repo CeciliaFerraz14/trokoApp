@@ -53,7 +53,7 @@ function GroupList({ groups, reorder = false }: { groups: Group[]; reorder?: boo
       {groups.map((g, i) => (
         <li key={g.id} className="flex items-center">
           <Link to={`/admin/grupos/${g.id}`} className="flex min-h-16 min-w-0 flex-1 items-center gap-3 px-4 py-2.5 hover:bg-surface-2">
-            <GroupDot color={g.color} className="size-4" />
+            <GroupDot color={g.color} image={g.image} className="size-4" imageClassName="size-8" />
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-lg font-semibold">{g.name}</p>
               {g.schedule && <p className="truncate text-sm text-muted">{g.schedule}</p>}
